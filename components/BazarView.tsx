@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Plus, CalendarDays, Clock, Trash2, X, Check, ChevronLeft, ChevronRight, Store, ShoppingCart, Receipt } from 'lucide-react';
+import { ShoppingBag, Plus, CalendarDays, Clock, Trash2, X, Check, ChevronLeft, ChevronRight, Store, ShoppingCart, Receipt, Hash } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
 
 interface BazarViewProps {
@@ -66,8 +66,10 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
       });
       setItem('');
       setAmount('');
-      setDateTime(getLocalDateTime());
+      // We don't refresh dateTime immediately so user can add multiple items to the "same time" group
     };
+
+    const refreshTime = () => setDateTime(getLocalDateTime());
 
     const startEditing = (t: Transaction) => {
         setEditingTx(t);
@@ -105,19 +107,34 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
         }
     };
 
-    const groupedBazar = useMemo(() => {
-      const groups: Record<string, Transaction[]> = {};
+    // Advanced grouping: Day -> Session (Same Timestamp)
+    const groupedStructure = useMemo(() => {
+      const days: Record<string, { 
+        dailyTotal: number, 
+        sessions: Record<string, { items: Transaction[], sessionTotal: number }> 
+      }> = {};
+
       bazarTransactions.forEach(t => {
-        const d = new Date(t.date);
-        d.setSeconds(0, 0);
-        const key = d.toISOString();
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(t);
+        const dayKey = t.date.split('T')[0];
+        const timeKey = t.date; // Unique timestamp session
+
+        if (!days[dayKey]) {
+          days[dayKey] = { dailyTotal: 0, sessions: {} };
+        }
+        
+        if (!days[dayKey].sessions[timeKey]) {
+          days[dayKey].sessions[timeKey] = { items: [], sessionTotal: 0 };
+        }
+
+        days[dayKey].dailyTotal += t.amount;
+        days[dayKey].sessions[timeKey].items.push(t);
+        days[dayKey].sessions[timeKey].sessionTotal += t.amount;
       });
-      return groups;
+
+      return days;
     }, [bazarTransactions]);
 
-    const sortedKeys = Object.keys(groupedBazar).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    const sortedDays = Object.keys(groupedStructure).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     return (
       <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32">
@@ -125,15 +142,15 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Bazar List</h2>
                 <div className="flex bg-md-surface-container rounded-full p-1">
-                   <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-white rounded-full"><ChevronLeft size={20}/></button>
-                   <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-white rounded-full"><ChevronRight size={20}/></button>
+                   <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-white rounded-full transition-colors"><ChevronLeft size={20}/></button>
+                   <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-white rounded-full transition-colors"><ChevronRight size={20}/></button>
                 </div>
             </div>
             
             <div className="bg-md-primary-container p-6 rounded-md-card shadow-sm border border-md-primary/10">
                 <div className="flex justify-between items-end">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-1">Spent in {viewDate.toLocaleDateString('en-US', { month: 'short' })}</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-1">Total Monthly Bazar</p>
                         <h3 className="text-4xl font-black text-md-on-primary-container tracking-tighter">Tk {totalBazarSpend.toLocaleString()}</h3>
                     </div>
                     <div className="bg-white/30 p-3 rounded-2xl text-md-on-primary-container">
@@ -199,16 +216,21 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
          <div className="px-4 space-y-6">
             {isCurrentCalendarMonth && (
                 <form onSubmit={handleQuickAdd} className="bg-md-surface-container-high p-5 rounded-md-card border border-md-outline/10 shadow-sm space-y-4">
-                   <div className="flex items-center gap-3 mb-2">
-                       <ShoppingCart size={18} className="text-md-primary" />
-                       <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant">Quick Entry</h4>
+                   <div className="flex items-center justify-between mb-2">
+                       <div className="flex items-center gap-3">
+                            <ShoppingCart size={18} className="text-md-primary" />
+                            <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant">Batch Entry</h4>
+                       </div>
+                       <button type="button" onClick={refreshTime} className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm text-md-primary active:rotate-180 transition-transform">
+                           <Clock size={16} />
+                       </button>
                    </div>
                    <div className="flex gap-3">
                        <input 
                          type="text" 
                          value={item}
                          onChange={(e) => setItem(e.target.value)}
-                         placeholder="What did you buy?"
+                         placeholder="Item name..."
                          className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner dark:text-white"
                          required
                        />
@@ -229,57 +251,85 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                           className="flex-1 bg-white dark:bg-zinc-800 px-4 py-2.5 rounded-xl text-[11px] font-black outline-none dark:text-white"
                         />
                         <button type="submit" className="bg-md-primary text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-md">
-                           Add Item
+                           Add to Batch
                         </button>
                    </div>
+                   <p className="text-[9px] font-bold text-center text-gray-400 uppercase tracking-widest italic">Items sharing the same time will be grouped together</p>
                 </form>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-10">
                 {bazarTransactions.length === 0 ? (
                     <div className="py-20 text-center opacity-30 flex flex-col items-center gap-4">
                         <Store size={64} strokeWidth={1} />
                         <p className="font-black text-xs uppercase tracking-[0.2em]">Inventory Empty</p>
                     </div>
                 ) : (
-                    sortedKeys.map(timeKey => {
-                        const groupItems = groupedBazar[timeKey];
-                        const dateObj = new Date(timeKey);
-                        
+                    sortedDays.map(dayKey => {
+                        const dayData = groupedStructure[dayKey];
+                        const dateObj = new Date(dayKey);
+                        const sessionKeys = Object.keys(dayData.sessions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
                         return (
-                            <div key={timeKey} className="space-y-3">
-                                <div className="flex justify-between items-center px-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-md-primary"></div>
-                                        <p className="text-[11px] font-black uppercase tracking-widest text-md-on-surface-variant">
-                                            {dateObj.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
-                                        </p>
+                            <div key={dayKey} className="space-y-4">
+                                <div className="flex justify-between items-center px-2 sticky top-20 z-10 bg-md-surface/80 backdrop-blur-md py-2 rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-md-primary flex items-center justify-center text-white shadow-md">
+                                            <CalendarDays size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-md-on-surface tracking-tight">
+                                                {dateObj.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' })}
+                                            </p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-md-primary">Daily Total</p>
+                                        </div>
                                     </div>
-                                    <p className="text-[10px] font-black text-gray-400">{dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    <div className="text-right">
+                                        <p className="text-lg font-black text-rose-600">Tk {dayData.dailyTotal.toLocaleString()}</p>
+                                    </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-zinc-900 rounded-[28px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm">
-                                    {groupItems.map((t, idx) => {
-                                        const acc = accounts.find(a => a.id === t.accountId);
+                                <div className="space-y-6">
+                                    {sessionKeys.map(timeKey => {
+                                        const session = dayData.sessions[timeKey];
                                         return (
-                                            <div 
-                                                key={t.id} 
-                                                onClick={() => startEditing(t)}
-                                                className={`flex items-center justify-between p-4 hover:bg-md-surface-container transition-all cursor-pointer group ${idx !== groupItems.length - 1 ? 'border-b border-gray-50 dark:border-zinc-800' : ''}`}
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-md-surface-container flex items-center justify-center text-md-primary dark:bg-zinc-800">
-                                                        <Receipt size={22} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{t.description}</p>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                           <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
-                                                        </div>
+                                            <div key={timeKey} className="bg-white dark:bg-zinc-900 rounded-[32px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm">
+                                                <div className="bg-md-surface-container px-4 py-2 flex justify-between items-center">
+                                                    <div className="flex items-center gap-2">
+                                                        <Clock size={12} className="text-gray-400" />
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                            Batch @ {new Date(timeKey).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <p className="font-black text-sm text-rose-600 dark:text-rose-400">Tk {t.amount.toLocaleString()}</p>
+                                                
+                                                <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+                                                    {session.items.map((t) => {
+                                                        const acc = accounts.find(a => a.id === t.accountId);
+                                                        return (
+                                                            <div 
+                                                                key={t.id} 
+                                                                onClick={() => startEditing(t)}
+                                                                className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                                                            >
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="w-8 h-8 rounded-lg bg-md-surface-container flex items-center justify-center text-md-primary dark:bg-zinc-800">
+                                                                        <Hash size={14} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-black text-sm text-md-on-surface leading-tight dark:text-white">{t.description}</p>
+                                                                        <p className="text-[9px] font-black uppercase tracking-widest mt-0.5" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="font-black text-sm text-rose-600 dark:text-rose-400">Tk {t.amount.toLocaleString()}</p>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                <div className="bg-rose-50/50 dark:bg-rose-900/10 px-4 py-3 flex justify-between items-center border-t border-rose-100 dark:border-rose-900/20">
+                                                    <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Bazar Sum (Batch)</p>
+                                                    <p className="font-black text-rose-700 text-sm">Tk {session.sessionTotal.toLocaleString()}</p>
                                                 </div>
                                             </div>
                                         );

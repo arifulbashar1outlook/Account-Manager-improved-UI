@@ -18,7 +18,8 @@ import {
   Tag,
   X as XIcon,
   LayoutDashboard,
-  CloudDownload
+  CloudDownload,
+  Calendar
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
@@ -100,11 +101,11 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-md-primary-container text-md-on-primary-container p-5 rounded-md-card shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Month Expend</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Month Total</p>
                     <h3 className="text-xl font-black">Tk {monthExpense.toLocaleString()}</h3>
                 </div>
                 <div className="bg-md-secondary-container text-md-on-secondary-container p-5 rounded-md-card shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Year Expend</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Year Total</p>
                     <h3 className="text-xl font-black">Tk {yearExpense.toLocaleString()}</h3>
                 </div>
             </div>
@@ -113,7 +114,7 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
                 <div className="p-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <ArrowDownCircle size={16} className="text-emerald-500" />
-                        <h3 className="font-black text-sm uppercase tracking-widest text-md-on-surface-variant">Income Sources</h3>
+                        <h3 className="font-black text-sm uppercase tracking-widest text-md-on-surface-variant">Income</h3>
                     </div>
                     <p className="text-xs font-black text-emerald-600">Tk {monthIncome.toLocaleString()}</p>
                 </div>
@@ -131,8 +132,40 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
 
             <div className="space-y-4">
                 <div className="flex items-center gap-2 px-2">
+                    <Calendar size={16} className="text-md-primary" />
+                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Daily Expend Sum</h3>
+                </div>
+                {sortedDays.length > 0 ? (
+                    <div className="grid gap-3">
+                        {sortedDays.map(day => (
+                            <div key={day} className="bg-white dark:bg-zinc-900 flex justify-between items-center p-5 rounded-2xl border border-gray-50 dark:border-zinc-800 shadow-sm transition-transform active:scale-[0.98]">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-md-surface-container flex items-center justify-center font-black text-md-primary">
+                                        {day}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-md-on-surface">Day {day}</p>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase">{viewDate.toLocaleDateString('en-US', { month: 'short' })} {viewDate.getFullYear()}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-black text-rose-600">Tk {dailyMap[day].toLocaleString()}</p>
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Daily Sum</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-12 text-center text-gray-400 opacity-50 bg-white dark:bg-zinc-900 rounded-md-card border border-dashed">
+                        <p className="text-sm font-bold uppercase tracking-widest">No spending records</p>
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-4">
+                <div className="flex items-center gap-2 px-2">
                     <Tag size={16} className="text-md-primary" />
-                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Categorized Expend</h3>
+                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Categorized Summary</h3>
                 </div>
                 {categoryGroups.length > 0 ? (
                     categoryGroups.map(([catName, data]) => (
@@ -141,13 +174,13 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
                                 <h4 className="font-black text-sm text-md-on-surface">{catName}</h4>
                                 <p className="font-black text-sm text-rose-600">Tk {data.total.toLocaleString()}</p>
                             </div>
-                            <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+                            <div className="divide-y divide-gray-50 dark:divide-zinc-800 max-h-48 overflow-y-auto">
                                 {data.transactions.map(t => (
                                     <div key={t.id} className="p-4 flex justify-between items-start hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
                                         <div className="space-y-1">
                                             <p className="text-sm font-bold text-md-on-surface leading-tight">{t.description}</p>
                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                                             </p>
                                         </div>
                                         <p className="text-sm font-black text-md-on-surface">Tk {t.amount.toLocaleString()}</p>
@@ -159,30 +192,6 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
                 ) : (
                     <div className="p-12 text-center text-gray-400 bg-white dark:bg-zinc-900 rounded-md-card border-dashed border-2 border-gray-100 dark:border-zinc-800">
                         <p className="text-xs font-black uppercase tracking-widest">No categorized data</p>
-                    </div>
-                )}
-            </div>
-
-            <div className="bg-white dark:bg-zinc-900 rounded-md-card border border-gray-100 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <div className="p-4 border-b flex items-center gap-2">
-                    <CalendarCheck size={16} className="text-md-primary" />
-                    <h3 className="font-black text-sm uppercase tracking-widest text-md-on-surface-variant">Daily Breakdown</h3>
-                </div>
-                {sortedDays.length > 0 ? (
-                    <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-                        {sortedDays.map(day => (
-                            <div key={day} className="flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
-                                <div>
-                                    <p className="text-sm font-bold text-md-on-surface">Day {day}</p>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{viewDate.toLocaleDateString('en-US', { month: 'short' })}</p>
-                                </div>
-                                <p className="font-black text-rose-600">Tk {dailyMap[day].toLocaleString()}</p>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="p-12 text-center text-gray-400 opacity-50">
-                        <p className="text-sm font-bold uppercase tracking-widest">No spending records</p>
                     </div>
                 )}
             </div>
@@ -227,8 +236,6 @@ const App: React.FC = () => {
     
     const config = getSyncConfig();
     if (config && config.url) {
-      // Auto-push only if we actually have data to push, 
-      // avoiding overwriting cloud with empty local state on first load
       if (transactions.length > 0) {
         triggerAutoPush();
       }
