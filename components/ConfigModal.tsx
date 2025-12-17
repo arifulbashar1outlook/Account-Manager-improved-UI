@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, X, Database, FileSpreadsheet, Copy, CheckCircle2 } from 'lucide-react';
+import { Save, AlertCircle, X, FileSpreadsheet, Copy, CheckCircle2, CloudDownload, RefreshCw } from 'lucide-react';
 import { getSyncConfig, saveSyncConfig, clearSyncConfig, GOOGLE_APPS_SCRIPT_CODE } from '../services/syncService';
 
 interface ConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPullData?: () => Promise<void>;
 }
 
-const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
+const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose, onPullData }) => {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -40,6 +42,18 @@ const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
       if (confirm("Are you sure you want to disconnect? This will remove the link to your Google Sheet.")) {
           clearSyncConfig();
           window.location.reload();
+      }
+  };
+
+  const handleManualPull = async () => {
+      if (!onPullData) return;
+      setIsPulling(true);
+      try {
+          await onPullData();
+      } catch (e) {
+          setError("Failed to pull data. Check your script URL and permissions.");
+      } finally {
+          setIsPulling(false);
       }
   };
 
@@ -101,6 +115,28 @@ const ConfigModal: React.FC<ConfigModalProps> = ({ isOpen, onClose }) => {
                         className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-800 dark:text-gray-200"
                     />
                 </div>
+
+                {getSyncConfig() && (
+                    <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
+                        <div className="flex items-start gap-3">
+                            <CloudDownload className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">Sync Existing Data</h4>
+                                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 mb-3">
+                                    Already have records in your Google Sheet? Pull them to this device.
+                                </p>
+                                <button
+                                    onClick={handleManualPull}
+                                    disabled={isPulling}
+                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                >
+                                    {isPulling ? <RefreshCw className="animate-spin w-4 h-4" /> : <CloudDownload className="w-4 h-4" />}
+                                    {isPulling ? 'Pulling...' : 'Pull from Cloud'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {error && (
                     <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-sm text-red-700 dark:text-red-400">

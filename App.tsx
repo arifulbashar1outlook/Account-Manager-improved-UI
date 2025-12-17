@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Wallet, 
   TrendingUp, 
   TrendingDown, 
   Plus, 
@@ -9,33 +8,27 @@ import {
   Menu, 
   ChevronLeft, 
   ChevronRight, 
-  ClipboardList, 
   CreditCard, 
   Settings, 
   HandCoins,
   Sparkles,
   ArrowLeft,
-  CalendarDays,
-  ShoppingBag,
-  Receipt,
-  PieChart as PieChartIcon,
-  Trash2,
-  LayoutDashboard,
   CalendarCheck,
   ArrowDownCircle,
   Tag,
-  X as XIcon
+  X as XIcon,
+  LayoutDashboard,
+  CloudDownload
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 
-import { Transaction, TransactionType, Category, Account } from './types';
+import { Transaction, Category, Account } from './types';
 import { getStoredTransactions, saveStoredTransactions, getStoredAccounts, saveStoredAccounts } from './services/storage';
 import { getFinancialAdvice } from './services/geminiService';
 import { getSyncConfig, pushToSheets, pullFromSheets } from './services/syncService';
 import TransactionForm from './components/TransactionForm';
 import SummaryCard from './components/SummaryCard';
-import FinancialChart from './components/FinancialChart';
 import BottomNavigation from './components/BottomNavigation';
 import SalaryManager from './components/SalaryManager';
 import ConfigModal from './components/ConfigModal';
@@ -207,11 +200,39 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
 
+  // Initial Sync on Mount
+  useEffect(() => {
+    const config = getSyncConfig();
+    if (config && config.url && transactions.length === 0) {
+      handleSyncPull();
+    }
+  }, []);
+
+  // Sync Logic
+  const handleSyncPull = async () => {
+    setSyncStatus('syncing');
+    const data = await pullFromSheets();
+    if (data) {
+      setTransactions(data.transactions);
+      setAccounts(data.accounts);
+      setSyncStatus('synced');
+    } else {
+      setSyncStatus('error');
+    }
+  };
+
   useEffect(() => {
     saveStoredTransactions(transactions);
     saveStoredAccounts(accounts);
+    
     const config = getSyncConfig();
-    if (config && config.url) triggerAutoPush();
+    if (config && config.url) {
+      // Auto-push only if we actually have data to push, 
+      // avoiding overwriting cloud with empty local state on first load
+      if (transactions.length > 0) {
+        triggerAutoPush();
+      }
+    }
   }, [transactions, accounts]);
 
   const triggerAutoPush = async () => {
@@ -264,7 +285,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 transition-colors">
-      <ConfigModal isOpen={showConfig} onClose={() => setShowConfig(false)} />
+      <ConfigModal 
+        isOpen={showConfig} 
+        onClose={() => setShowConfig(false)} 
+        onPullData={handleSyncPull}
+      />
 
       {!isFullscreenView && (
         <header className="sticky top-0 z-50 bg-md-surface dark:bg-zinc-950 px-4 py-4 flex items-center justify-between shadow-sm">
@@ -273,9 +298,9 @@ const App: React.FC = () => {
               <div>
                 <h1 className="text-xl font-black tracking-tight text-md-on-surface">Account Manager</h1>
                 <div className="flex items-center gap-1.5 opacity-60">
-                  <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+                  <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-gray-400'}`}></div>
                   <p className="text-[10px] font-black uppercase tracking-wider">
-                    {syncStatus === 'synced' ? 'Synced' : 'Local'}
+                    {syncStatus === 'synced' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Local Only'}
                   </p>
                 </div>
               </div>
@@ -420,6 +445,7 @@ const App: React.FC = () => {
                  <MenuBtn onClick={() => { setShowConfig(true); setIsMenuOpen(false); }} icon={RefreshCw} label="Cloud Sync Setup" />
                  <MenuBtn onClick={() => { setActiveTab('wallet-manager'); setIsMenuOpen(false); }} icon={CreditCard} label="Manage Wallets" />
                  <MenuBtn onClick={() => { setActiveTab('lending'); setIsMenuOpen(false); }} icon={HandCoins} label="Debt & Lending" />
+                 <MenuBtn onClick={() => { handleSyncPull(); setIsMenuOpen(false); }} icon={CloudDownload} label="Force Sync Pull" />
               </div>
               <div className="absolute bottom-10 left-8 right-8 text-center">
                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">SmartSpend v1.2</p>
