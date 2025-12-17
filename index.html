@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#6750A4" />
+    
+    <title>Account Manager</title>
+    
+    <script>window.process = { env: {} };</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              md: {
+                primary: '#6750A4',
+                'on-primary': '#FFFFFF',
+                'primary-container': '#EADDFF',
+                'on-primary-container': '#21005D',
+                secondary: '#625B71',
+                'on-secondary': '#FFFFFF',
+                'secondary-container': '#E8DEF8',
+                'on-secondary-container': '#1D192B',
+                surface: '#FEF7FF',
+                'on-surface': '#1D1B20',
+                'surface-container': '#F3EDF7',
+                'surface-container-high': '#ECE6F0',
+                'on-surface-variant': '#49454F',
+                outline: '#79747E',
+                error: '#B3261E',
+              }
+            },
+            borderRadius: {
+              'md-full': '100px',
+              'md-card': '28px',
+              'md-input': '12px',
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        background-color: #FEF7FF;
+        color: #1D1B20;
+      }
+      .dark body {
+        background-color: #141218;
+        color: #E6E1E5;
+      }
+      .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-thumb { background: #79747E; border-radius: 10px; }
+      
+      /* Material Ripple Effect Simulation */
+      .md-ripple {
+        position: relative;
+        overflow: hidden;
+      }
+      .md-ripple:active::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        background: rgba(103, 80, 164, 0.12);
+        pointer-events: none;
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "recharts": "https://esm.sh/recharts@^3.5.1",
+    "uuid": "https://esm.sh/uuid@^13.0.0",
+    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
+  <body class="transition-colors duration-200">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
