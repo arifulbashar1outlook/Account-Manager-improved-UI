@@ -306,6 +306,12 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                                     <span className="w-1.5 h-1.5 rounded-full bg-md-primary/20"></span>
                                                 </div>
                                                 
+                                                {/* Batch Summary moved to top */}
+                                                <div className="bg-md-surface-container-high dark:bg-rose-900/10 px-5 py-4 text-center border-b border-black/5">
+                                                    <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] mb-1">Bazar Sum (Batch)</p>
+                                                    <p className="font-black text-rose-700 text-lg tracking-tight">Tk {session.sessionTotal.toLocaleString()}</p>
+                                                </div>
+
                                                 <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                                                     {session.items.map((t) => {
                                                         const acc = accounts.find(a => a.id === t.accountId);
@@ -328,11 +334,6 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                                             </div>
                                                         );
                                                     })}
-                                                </div>
-
-                                                <div className="bg-md-surface-container-high dark:bg-rose-900/10 px-5 py-4 text-center border-t border-black/5">
-                                                    <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] mb-1">Bazar Sum (Batch)</p>
-                                                    <p className="font-black text-rose-700 text-lg tracking-tight">Tk {session.sessionTotal.toLocaleString()}</p>
                                                 </div>
                                             </div>
                                         );
