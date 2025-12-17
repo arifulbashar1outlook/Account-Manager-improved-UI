@@ -296,21 +296,16 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                         const session = dayData.sessions[timeKey];
                                         return (
                                             <div key={timeKey} className="bg-white dark:bg-zinc-900 rounded-[32px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm relative">
-                                                <div className="bg-md-surface-container px-4 py-2 flex justify-between items-center border-b border-black/5">
+                                                <div className="bg-md-surface-container px-4 py-3 flex justify-between items-center border-b border-black/5">
                                                     <div className="flex items-center gap-2">
                                                         <Clock size={12} className="text-md-primary" />
                                                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                                            {new Date(timeKey).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            Batch @ {new Date(timeKey).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </p>
                                                     </div>
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-md-primary/20"></span>
+                                                    <p className="font-black text-rose-700 text-sm tracking-tight">Tk {session.sessionTotal.toLocaleString()}</p>
                                                 </div>
                                                 
-                                                {/* Batch Summary Header */}
-                                                <div className="bg-md-surface-container-high dark:bg-rose-900/10 px-5 py-4 text-center border-b border-black/5">
-                                                    <p className="font-black text-rose-700 text-lg tracking-tight">Tk {session.sessionTotal.toLocaleString()}</p>
-                                                </div>
-
                                                 <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                                                     {session.items.map((t) => {
                                                         const acc = accounts.find(a => a.id === t.accountId);
