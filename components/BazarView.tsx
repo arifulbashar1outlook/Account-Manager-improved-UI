@@ -143,8 +143,9 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     return (
       <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32">
-         <div className="px-6 pt-safe space-y-4">
-            <div className="flex items-center justify-between pt-10 pb-6">
+         {/* Top Section with Title and Total Card */}
+         <div className="px-6 space-y-6">
+            <div className="flex items-center justify-between pt-4 pb-2">
                 <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Bazar List</h2>
                 <div className="flex bg-md-surface-container rounded-full p-1 shadow-inner border border-black/5">
                    <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-white rounded-full transition-all active:scale-90"><ChevronLeft size={20}/></button>
@@ -168,6 +169,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
             </div>
          </div>
 
+         {/* Edit Modal */}
          {editingTx && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white dark:bg-zinc-900 rounded-[28px] shadow-2xl w-full max-w-sm overflow-hidden p-6 space-y-6">
@@ -221,10 +223,11 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
             </div>
          )}
 
-         <div className="px-4 space-y-6">
+         {/* Batch Entry Form */}
+         <div className="px-4 mt-6 space-y-6">
             {isCurrentCalendarMonth && (
                 <form onSubmit={handleQuickAdd} className="bg-md-surface-container-high p-5 rounded-md-card border border-md-outline/10 shadow-sm space-y-4">
-                   <div className="flex items-center justify-between mb-2">
+                   <div className="flex items-center justify-between mb-1">
                        <div className="flex items-center gap-3">
                             <ShoppingCart size={18} className="text-md-primary" />
                             <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant">Batch Entry</h4>
@@ -251,24 +254,27 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                          required
                        />
                    </div>
-                   <div className="flex items-center gap-2">
-                        <input 
-                          type="datetime-local" 
-                          value={dateTime}
-                          onChange={(e) => setDateTime(e.target.value)}
-                          className="flex-1 bg-white dark:bg-zinc-800 px-4 py-2.5 rounded-xl text-[11px] font-black outline-none dark:text-white"
-                        />
-                        <button type="submit" className="bg-md-primary text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-md">
+                   <div className="flex items-center gap-3">
+                        <div className="flex-1 bg-white dark:bg-zinc-800 px-4 py-3 rounded-2xl shadow-inner relative overflow-hidden">
+                             <input 
+                              type="datetime-local" 
+                              value={dateTime}
+                              onChange={(e) => setDateTime(e.target.value)}
+                              className="w-full bg-transparent text-[11px] font-black outline-none dark:text-white"
+                            />
+                        </div>
+                        <button type="submit" className="bg-md-primary text-white px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-md">
                            Add to Batch
                         </button>
                    </div>
-                   <p className="text-[9px] font-bold text-center text-gray-400 uppercase tracking-widest italic">Items sharing the same time will be grouped together</p>
+                   <p className="text-[9px] font-bold text-center text-gray-400 uppercase tracking-widest italic pt-1">Items sharing the same time will be grouped together</p>
                 </form>
             )}
 
-            <div className="space-y-12">
+            {/* Transaction List */}
+            <div className="space-y-12 pb-10">
                 {bazarTransactions.length === 0 ? (
-                    <div className="py-20 text-center opacity-30 flex flex-col items-center gap-4">
+                    <div className="py-10 text-center opacity-30 flex flex-col items-center gap-4">
                         <Store size={64} strokeWidth={1} />
                         <p className="font-black text-xs uppercase tracking-[0.2em]">Inventory Empty</p>
                     </div>

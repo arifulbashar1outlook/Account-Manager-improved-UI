@@ -30,7 +30,8 @@ import {
   ArrowUpRight,
   Landmark,
   List,
-  Target
+  Target,
+  FileSpreadsheet
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -41,7 +42,7 @@ import TransactionForm from './components/TransactionForm';
 import SummaryCard from './components/SummaryCard';
 import BottomNavigation from './components/BottomNavigation';
 import SalaryManager from './components/SalaryManager';
-import ConfigModal from './components/ConfigModal';
+import SyncView from './components/SyncView';
 import AccountsView from './components/AccountsView';
 import LendingView from './components/LendingView';
 import BazarView from './components/BazarView';
@@ -395,7 +396,6 @@ const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [hasSyncedOnMount, setHasSyncedOnMount] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
 
   // Sync Logic - Pull and Merge
   const handleSyncPull = useCallback(async (silent = false) => {
@@ -526,16 +526,10 @@ const App: React.FC = () => {
     return { inc, exp, bal: inc - exp };
   }, [transactions]);
 
-  const isFullscreenView = activeTab === 'wallet-manager' || activeTab === 'input';
+  const isFullscreenView = activeTab === 'wallet-manager' || activeTab === 'input' || activeTab === 'sync-setup';
 
   return (
     <div className="min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 transition-colors">
-      <ConfigModal 
-        isOpen={showConfig} 
-        onClose={() => setShowConfig(false)} 
-        onPullData={handleSyncPull}
-      />
-
       {!isFullscreenView && (
         <header className="sticky top-0 z-50 bg-md-surface/80 dark:bg-zinc-950/80 backdrop-blur-md px-4 pt-safe flex items-center justify-between shadow-sm border-b dark:border-zinc-800">
            <div className="flex items-center gap-3 py-4">
@@ -649,6 +643,12 @@ const App: React.FC = () => {
               onBack={() => setActiveTab('dashboard')} 
           />
         )}
+        {activeTab === 'sync-setup' && (
+          <SyncView 
+              onBack={() => setActiveTab('dashboard')} 
+              onPullData={handleSyncPull}
+          />
+        )}
       </main>
 
       {!isFullscreenView && (
@@ -671,7 +671,7 @@ const App: React.FC = () => {
                 <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-md-surface-container rounded-full transition-colors"><XIcon size={24}/></button>
               </div>
               <div className="space-y-3">
-                 <MenuBtn onClick={() => { setShowConfig(true); setIsMenuOpen(false); }} icon={RefreshCw} label="Cloud Sync Setup" />
+                 <MenuBtn onClick={() => { setActiveTab('sync-setup'); setIsMenuOpen(false); }} icon={FileSpreadsheet} label="Cloud Sync Setup" />
                  <MenuBtn onClick={() => { setActiveTab('wallet-manager'); setIsMenuOpen(false); }} icon={CreditCard} label="Manage Wallets" />
                  <MenuBtn onClick={() => { setActiveTab('lending'); setIsMenuOpen(false); }} icon={HandCoins} label="Debt & Lending" />
                  
