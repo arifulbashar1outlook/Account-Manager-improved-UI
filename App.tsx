@@ -248,18 +248,19 @@ const App: React.FC = () => {
     setSyncStatus(success ? 'synced' : 'error');
   }, []);
 
-  // Initial Sync and Polling Setup
+  // Initial Sync and Polling Setup (5 seconds interval for multi-device parity)
   useEffect(() => {
     const config = getSyncConfig();
     if (config && config.url) {
+      // Step 1: Always pull on open
       handleSyncPull();
       
-      // Setup periodic polling every 60 seconds to keep devices in sync
+      // Step 2: Aggressive polling (5 seconds) to catch other device changes
       const pollInterval = setInterval(() => {
         handleSyncPull(true);
-      }, 60000);
+      }, 5000);
 
-      // Also pull when window regains focus
+      // Step 3: Pull when tab becomes active
       const onFocus = () => handleSyncPull(true);
       window.addEventListener('focus', onFocus);
 
@@ -272,7 +273,7 @@ const App: React.FC = () => {
     }
   }, [handleSyncPull]);
 
-  // Handle local changes
+  // Handle local changes - Always push immediately
   const handleAddTransaction = (t: Omit<Transaction, 'id'>) => {
     const newTx = {...t, id: uuidv4()};
     const updated = [newTx, ...transactions];
@@ -354,7 +355,10 @@ const App: React.FC = () => {
            <div className="flex items-center gap-1">
               {getSyncConfig() && (
                 <button 
-                  onClick={() => triggerAutoPush()} 
+                  onClick={async () => {
+                    await triggerAutoPush();
+                    await handleSyncPull();
+                  }} 
                   disabled={syncStatus === 'syncing'}
                   className={`p-2.5 rounded-full hover:bg-md-surface-container text-md-primary transition-all active:rotate-180 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`}
                   title="Sync Now"
