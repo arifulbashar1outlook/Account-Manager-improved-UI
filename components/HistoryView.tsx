@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   History, 
@@ -14,7 +15,8 @@ import {
   Calendar,
   Search,
   Filter,
-  ArrowDown
+  ArrowDown,
+  Clock
 } from 'lucide-react';
 import { Transaction, AccountType, Category, TransactionType, Account } from '../types';
 
@@ -78,6 +80,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
         setEditAmount(t.amount.toString());
         try {
             const d = new Date(t.date);
+            // Convert to local ISO format for datetime-local input
             const localIso = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
             setEditDate(localIso);
         } catch (e) {
@@ -122,7 +125,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
        <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32">
          {editingTx && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-white dark:bg-zinc-900 rounded-[28px] shadow-2xl w-full max-w-sm overflow-hidden p-6 space-y-6">
+                <div className="bg-white dark:bg-zinc-900 rounded-[28px] shadow-2xl w-full max-w-sm overflow-hidden p-6 space-y-5">
                     <h3 className="text-xl font-bold text-md-on-surface">Edit Transaction</h3>
                     <div className="space-y-4">
                         <div className="relative">
@@ -134,6 +137,23 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                                 className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-bold dark:bg-zinc-800 dark:text-white"
                             />
                         </div>
+                        
+                        <div className="relative">
+                            <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Date & Time</label>
+                            <div className="relative flex items-center bg-md-surface-container rounded-xl overflow-hidden px-4 py-3 group dark:bg-zinc-800 border border-transparent focus-within:border-md-primary transition-all cursor-pointer" onClick={(e) => {
+                              const input = e.currentTarget.querySelector('input');
+                              if (input) (input as any).showPicker?.();
+                            }}>
+                                <Clock size={16} className="text-md-primary mr-3" />
+                                <input 
+                                    type="datetime-local" 
+                                    value={editDate}
+                                    onChange={(e) => setEditDate(e.target.value)}
+                                    className="w-full bg-transparent outline-none font-bold dark:text-white cursor-pointer"
+                                />
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
                                 <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Amount</label>

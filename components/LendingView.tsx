@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   User, 
@@ -17,7 +18,8 @@ import {
   HandCoins,
   ArrowRightLeft,
   Calendar,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
 
@@ -115,7 +117,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
       type,
       category: Category.LENDING,
       description,
-      date: date,
+      date: new Date(date).toISOString(),
       accountId: account
     });
     
@@ -304,9 +306,9 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                     <div 
                       key={p.name}
                       onClick={() => setSelectedPerson(p.name)}
-                      className="bg-white dark:bg-zinc-900 p-5 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm flex items-center justify-between cursor-pointer hover:bg-md-surface-container group transition-all active:scale-[0.98]"
+                      className="bg-white dark:bg-zinc-900 p-5 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm flex items-center justify-between cursor-pointer hover:bg-md-surface-container group transition-all active:scale-[0.98] md-ripple"
                     >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 flex-1">
                             <div className="w-12 h-12 rounded-2xl bg-md-primary-container text-md-primary flex items-center justify-center font-black text-lg">
                                 {p.name.charAt(0).toUpperCase()}
                             </div>
@@ -332,7 +334,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                                     e.stopPropagation();
                                     setRenamingPerson({ oldName: p.name, newName: p.name });
                                 }}
-                                className="p-2 text-gray-300 hover:text-md-primary opacity-0 group-hover:opacity-100 transition-all"
+                                className="p-2 text-gray-300 hover:text-md-primary opacity-0 group-hover:opacity-100 transition-all active:bg-md-primary/10 rounded-full"
                             >
                                 <Edit2 size={16} />
                             </button>
@@ -356,7 +358,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
       <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32 animate-in slide-in-from-right duration-400">
          {editingTx && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-white dark:bg-zinc-900 rounded-[28px] shadow-2xl w-full max-w-sm p-6 space-y-6">
+                <div className="bg-white dark:bg-zinc-900 rounded-[28px] shadow-2xl w-full max-w-sm p-6 space-y-5">
                     <h3 className="text-xl font-bold text-md-on-surface">Edit Record</h3>
                     <div className="space-y-4">
                         <div className="relative">
@@ -368,6 +370,23 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                                 className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-black dark:bg-zinc-800 dark:text-white"
                             />
                         </div>
+
+                        <div className="relative">
+                            <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Date & Time</label>
+                            <div className="relative flex items-center bg-md-surface-container rounded-xl overflow-hidden px-4 py-3 dark:bg-zinc-800 border border-transparent focus-within:border-md-primary transition-all cursor-pointer" onClick={(e) => {
+                                const input = e.currentTarget.querySelector('input');
+                                if (input) (input as any).showPicker?.();
+                            }}>
+                                <Clock size={16} className="text-md-primary mr-3" />
+                                <input 
+                                    type="datetime-local" 
+                                    value={editDate}
+                                    onChange={(e) => setEditDate(e.target.value)}
+                                    className="w-full bg-transparent outline-none font-bold dark:text-white cursor-pointer"
+                                />
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
                                 <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Amount</label>
@@ -375,11 +394,11 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                                     type="number" 
                                     value={editAmount}
                                     onChange={(e) => setEditAmount(e.target.value)}
-                                    className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-black dark:bg-zinc-800 dark:text-white"
+                                    className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-bold dark:bg-zinc-800 dark:text-white"
                                 />
                             </div>
                             <div className="relative">
-                                <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Account</label>
+                                <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Wallet</label>
                                 <select
                                     value={editAccount}
                                     onChange={(e) => setEditAccount(e.target.value as AccountType)}
@@ -462,13 +481,16 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
+                        <div className="relative flex-1 cursor-pointer" onClick={(e) => {
+                          const input = e.currentTarget.querySelector('input');
+                          if (input) (input as any).showPicker?.();
+                        }}>
                             <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-md-primary" />
                             <input 
                                 type="date" 
                                 value={date}
                                 onChange={e => setDate(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 bg-md-surface-container rounded-2xl outline-none text-[11px] font-black shadow-inner dark:bg-zinc-800 dark:text-white"
+                                className="w-full pl-10 pr-4 py-3 bg-md-surface-container rounded-2xl outline-none text-[11px] font-black shadow-inner dark:bg-zinc-800 dark:text-white cursor-pointer"
                             />
                         </div>
                         <button 

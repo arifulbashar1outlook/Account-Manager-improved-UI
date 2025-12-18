@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -213,15 +213,16 @@ const App: React.FC = () => {
   const [showConfig, setShowConfig] = useState(false);
 
   // Sync Logic - Pull and Merge
-  const handleSyncPull = async () => {
-    setSyncStatus('syncing');
+  const handleSyncPull = useCallback(async (silent = false) => {
+    if (!silent) setSyncStatus('syncing');
     const cloudData = await pullFromSheets();
     if (cloudData) {
-      // Merge Transactions
-      const mergedTransactions = mergeFinancialData(transactions, cloudData.transactions);
-      setTransactions(mergedTransactions);
+      setTransactions(prev => {
+        const merged = mergeFinancialData(prev, cloudData.transactions);
+        saveStoredTransactions(merged);
+        return merged;
+      });
       
-      // Merge Accounts - Simpler logic, Cloud wins if ID exists
       setAccounts(prev => {
         const mergedAccs = [...prev];
         cloudData.accounts.forEach(ca => {
@@ -229,58 +230,89 @@ const App: React.FC = () => {
             mergedAccs.push(ca);
           }
         });
+        saveStoredAccounts(mergedAccs);
         return mergedAccs;
       });
 
       setSyncStatus('synced');
       setHasSyncedOnMount(true);
-      return mergedTransactions;
     } else {
-      setSyncStatus('error');
-      return null;
+      if (!silent) setSyncStatus('error');
     }
-  };
+  }, []);
 
-  // Initial Sync on Mount - Always pull and merge
+  const triggerAutoPush = useCallback(async () => {
+    if (!navigator.onLine) return;
+    setSyncStatus('syncing');
+    const success = await pushToSheets(getStoredTransactions(), getStoredAccounts());
+    setSyncStatus(success ? 'synced' : 'error');
+  }, []);
+
+  // Initial Sync and Polling Setup
   useEffect(() => {
     const config = getSyncConfig();
     if (config && config.url) {
       handleSyncPull();
+      
+      // Setup periodic polling every 60 seconds to keep devices in sync
+      const pollInterval = setInterval(() => {
+        handleSyncPull(true);
+      }, 60000);
+
+      // Also pull when window regains focus
+      const onFocus = () => handleSyncPull(true);
+      window.addEventListener('focus', onFocus);
+
+      return () => {
+        clearInterval(pollInterval);
+        window.removeEventListener('focus', onFocus);
+      };
     } else {
       setHasSyncedOnMount(true);
     }
-  }, []);
+  }, [handleSyncPull]);
 
-  // Save to Local Storage & Auto-Push
-  useEffect(() => {
-    saveStoredTransactions(transactions);
-    saveStoredAccounts(accounts);
-    
-    // Only auto-push AFTER the initial merge to prevent overwriting cloud with partial data
-    if (hasSyncedOnMount) {
-      const config = getSyncConfig();
-      if (config && config.url) {
-        triggerAutoPush();
-      }
-    }
-  }, [transactions, accounts, hasSyncedOnMount]);
+  // Handle local changes
+  const handleAddTransaction = (t: Omit<Transaction, 'id'>) => {
+    const newTx = {...t, id: uuidv4()};
+    const updated = [newTx, ...transactions];
+    setTransactions(updated);
+    saveStoredTransactions(updated);
+    if (hasSyncedOnMount) triggerAutoPush();
+  };
 
-  const triggerAutoPush = async () => {
-    if (!navigator.onLine) return;
-    setSyncStatus('syncing');
-    const success = await pushToSheets(transactions, accounts);
-    setSyncStatus(success ? 'synced' : 'error');
+  const handleUpdateTransaction = (updatedTx: Transaction) => {
+    const updated = transactions.map(t => t.id === updatedTx.id ? updatedTx : t);
+    setTransactions(updated);
+    saveStoredTransactions(updated);
+    if (hasSyncedOnMount) triggerAutoPush();
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    const updated = transactions.filter(t => t.id !== id);
+    setTransactions(updated);
+    saveStoredTransactions(updated);
+    if (hasSyncedOnMount) triggerAutoPush();
+  };
+
+  const handleUpdateAccounts = (updater: Account[] | ((prev: Account[]) => Account[])) => {
+    setAccounts(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      saveStoredAccounts(next);
+      if (hasSyncedOnMount) triggerAutoPush();
+      return next;
+    });
   };
 
   const accountBalances = useMemo(() => {
     const b: Record<string, number> = {};
     accounts.forEach(a => b[a.id] = 0);
     transactions.forEach(t => {
-      if (t.type === 'income') b[t.accountId] += t.amount;
-      else if (t.type === 'expense') b[t.accountId] -= t.amount;
+      if (t.type === 'income') b[t.accountId] = (b[t.accountId] || 0) + t.amount;
+      else if (t.type === 'expense') b[t.accountId] = (b[t.accountId] || 0) - t.amount;
       else if (t.type === 'transfer') {
-        b[t.accountId] -= t.amount;
-        if (t.targetAccountId) b[t.targetAccountId] += t.amount;
+        b[t.accountId] = (b[t.accountId] || 0) - t.amount;
+        if (t.targetAccountId) b[t.targetAccountId] = (b[t.targetAccountId] || 0) + t.amount;
       }
     });
     return b;
@@ -294,22 +326,6 @@ const App: React.FC = () => {
     const bzr = filtered.filter(t => t.category === Category.BAZAR).reduce((s, t) => s + t.amount, 0);
     return { inc, exp, bal: inc - exp, bzr };
   }, [transactions]);
-
-  const handleAddTransaction = (t: Omit<Transaction, 'id'>) => {
-    setTransactions(prev => [{...t, id: uuidv4()}, ...prev]);
-  };
-
-  const handleUpdateTransaction = (updatedTx: Transaction) => {
-    setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
-  };
-
-  const handleDeleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
-  };
-
-  const handleUpdateAccounts = (updater: Account[] | ((prev: Account[]) => Account[])) => {
-    setAccounts(updater);
-  };
 
   const isFullscreenView = activeTab === 'wallet-manager' || activeTab === 'input';
 
@@ -330,7 +346,7 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-1.5 opacity-60">
                   <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'syncing' ? 'bg-amber-500 animate-pulse' : 'bg-gray-400'}`}></div>
                   <p className="text-[10px] font-black uppercase tracking-wider">
-                    {syncStatus === 'synced' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Local Only'}
+                    {syncStatus === 'synced' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Local Only'}
                   </p>
                 </div>
               </div>
@@ -338,7 +354,7 @@ const App: React.FC = () => {
            <div className="flex items-center gap-1">
               {getSyncConfig() && (
                 <button 
-                  onClick={handleSyncPull} 
+                  onClick={() => triggerAutoPush()} 
                   disabled={syncStatus === 'syncing'}
                   className={`p-2.5 rounded-full hover:bg-md-surface-container text-md-primary transition-all active:rotate-180 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`}
                   title="Sync Now"
