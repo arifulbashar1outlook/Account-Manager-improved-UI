@@ -47,7 +47,7 @@ import LendingView from './components/LendingView';
 import BazarView from './components/BazarView';
 import HistoryView from './components/HistoryView';
 
-const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transactions }) => {
+const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Account[] }> = ({ transactions, accounts }) => {
     const [viewDate, setViewDate] = useState(new Date());
     const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
     const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
@@ -239,17 +239,26 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
                                   </button>
                                   {isExpanded && (
                                       <div className="divide-y divide-gray-50 dark:divide-zinc-800 bg-gray-50 dark:bg-zinc-950/50">
-                                          {data.transactions.map(t => (
-                                              <div key={t.id} className="p-4 flex justify-between items-start animate-in slide-in-from-top-2 duration-200">
-                                                  <div className="space-y-0.5">
-                                                      <p className="text-sm font-bold text-md-on-surface leading-tight">{t.description}</p>
-                                                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                          {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                                      </p>
+                                          {data.transactions.map(t => {
+                                              const acc = accounts.find(a => a.id === t.accountId);
+                                              return (
+                                                  <div key={t.id} className="p-4 flex justify-between items-start animate-in slide-in-from-top-2 duration-200">
+                                                      <div className="space-y-0.5">
+                                                          <p className="text-sm font-bold text-md-on-surface leading-tight dark:text-gray-100">{t.description}</p>
+                                                          <div className="flex items-center gap-1.5 mt-0.5">
+                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                                  {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                              </p>
+                                                              <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>
+                                                                  {acc?.name || 'Wallet'}
+                                                              </p>
+                                                          </div>
+                                                      </div>
+                                                      <p className={`text-sm font-black ${typeColors[activeReportType]}`}>Tk {t.amount.toLocaleString()}</p>
                                                   </div>
-                                                  <p className="text-sm font-black text-md-on-surface">Tk {t.amount.toLocaleString()}</p>
-                                              </div>
-                                          ))}
+                                              );
+                                          })}
                                       </div>
                                   )}
                               </div>
@@ -319,31 +328,38 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
                                         </button>
                                         {isExpanded && (
                                             <div className="bg-white dark:bg-zinc-900 rounded-[28px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-2 duration-300">
-                                                {dayTx.map((t, idx) => (
-                                                    <div key={t.id} className={`p-4 flex justify-between items-center ${idx !== dayTx.length - 1 ? 'border-b border-gray-50 dark:border-zinc-800' : ''}`}>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                                t.type === 'income' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' :
-                                                                t.type === 'expense' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20'
-                                                            }`}>
-                                                                {t.type === 'income' ? <TrendingUp size={14} /> : 
-                                                                 t.type === 'expense' ? <TrendingDown size={14} /> : <ArrowRightLeft size={14} />}
+                                                {dayTx.map((t, idx) => {
+                                                    const acc = accounts.find(a => a.id === t.accountId);
+                                                    return (
+                                                        <div key={t.id} className={`p-4 flex justify-between items-center ${idx !== dayTx.length - 1 ? 'border-b border-gray-50 dark:border-zinc-800' : ''}`}>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                                                    t.type === 'income' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' :
+                                                                    t.type === 'expense' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20'
+                                                                }`}>
+                                                                    {t.type === 'income' ? <TrendingUp size={14} /> : 
+                                                                    t.type === 'expense' ? <TrendingDown size={14} /> : <ArrowRightLeft size={14} />}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-md-on-surface truncate max-w-[150px] dark:text-gray-100">{t.description}</p>
+                                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.category}</p>
+                                                                        <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                                                                        <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="text-sm font-bold text-md-on-surface truncate max-w-[150px] dark:text-gray-100">{t.description}</p>
-                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.category}</p>
+                                                            <div className="text-right">
+                                                                <p className={`text-sm font-black ${
+                                                                    t.type === 'income' ? 'text-emerald-600' : 
+                                                                    t.type === 'expense' ? 'text-rose-600' : 'text-md-on-surface-variant dark:text-indigo-400'
+                                                                }`}>
+                                                                    {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''}Tk {t.amount.toLocaleString()}
+                                                                </p>
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className={`text-sm font-black ${
-                                                                t.type === 'income' ? 'text-emerald-600' : 
-                                                                t.type === 'expense' ? 'text-rose-600' : 'text-md-on-surface-variant dark:text-indigo-400'
-                                                            }`}>
-                                                                {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''}Tk {t.amount.toLocaleString()}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -608,7 +624,7 @@ const App: React.FC = () => {
             />
         )}
         
-        {activeTab === 'full-report' && <FullMonthlyReport transactions={transactions} />}
+        {activeTab === 'full-report' && <FullMonthlyReport transactions={transactions} accounts={accounts} />}
         {activeTab === 'history' && (
           <HistoryView 
               transactions={transactions} 
