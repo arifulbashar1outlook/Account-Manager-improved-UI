@@ -48,8 +48,6 @@ const SyncView: React.FC<SyncViewProps> = ({ onBack, onPullData }) => {
     }
 
     saveSyncConfig({ url: url.trim() });
-    // Using a simple alert or notification instead of hard reload if possible, 
-    // but App.tsx currently relies on reload to pick up config.
     window.location.reload(); 
   };
 
@@ -147,7 +145,7 @@ const SyncView: React.FC<SyncViewProps> = ({ onBack, onPullData }) => {
                     <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface">Deploy Apps Script</h4>
                 </div>
                 <p className="text-xs text-md-on-surface-variant leading-relaxed">
-                    Open your Google Sheet, go to <b>Extensions > Apps Script</b>, paste this code, and <b>Deploy as Web App</b> (Access: "Anyone").
+                    Open your Google Sheet, go to <b>Extensions &gt; Apps Script</b>, paste this code, and <b>Deploy as Web App</b> (Access: "Anyone").
                 </p>
                 
                 <div className="relative group">
