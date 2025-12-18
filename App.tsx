@@ -51,6 +51,7 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
     const [viewDate, setViewDate] = useState(new Date());
     const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
     const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
+    const [isDailyBreakdownExpanded, setIsDailyBreakdownExpanded] = useState(true);
     const [activeReportType, setActiveReportType] = useState<'expense' | 'income' | 'transfer' | 'withdraw'>('expense');
 
     const changeMonth = (offset: number) => {
@@ -264,84 +265,95 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
 
             {/* Daily Activity */}
             <div className="space-y-4">
-                <div className="flex items-center gap-2 px-2">
-                    <List size={16} className="text-md-primary" />
-                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Daily Breakdown</h3>
-                </div>
-                {sortedDays.length > 0 ? (
-                    <div className="space-y-6">
-                        {sortedDays.map(day => {
-                            const dayTx = dailyGroups[day];
-                            const dayIn = dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-                            const dayOut = dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-                            const isExpanded = expandedDays[day];
-
-                            return (
-                                <div key={day} className="space-y-2">
-                                    <button 
-                                        onClick={() => toggleDay(day)}
-                                        className="w-full flex justify-between items-center px-2 py-1 rounded-2xl hover:bg-black/5 active:bg-black/10 transition-colors text-left"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-md-primary text-white flex items-center justify-center text-[10px] font-black shadow-sm">
-                                              <span className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                                {isExpanded ? <ChevronDown size={14} /> : day}
-                                              </span>
-                                            </div>
-                                            <p className="text-xs font-black uppercase text-md-on-surface-variant">{monthName.split(' ')[0]} {day}</p>
-                                        </div>
-                                        <div className="text-right flex items-center gap-4">
-                                            <div className="flex flex-col items-end">
-                                                <p className="text-[7px] font-black text-rose-400 uppercase tracking-widest">Out</p>
-                                                <p className="text-[10px] font-black text-rose-600">Tk {dayOut.toLocaleString()}</p>
-                                            </div>
-                                            <div className="flex flex-col items-end border-l pl-4 border-gray-100 dark:border-zinc-800">
-                                                <p className="text-[7px] font-black text-emerald-400 uppercase tracking-widest">Net</p>
-                                                <p className={`text-[10px] font-black ${dayIn - dayOut >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                    {dayIn - dayOut >= 0 ? '+' : ''}Tk {(dayIn - dayOut).toLocaleString()}
-                                                </p>
-                                            </div>
-                                            <div className={`p-1 rounded-full bg-md-surface-container transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                                <ChevronDown size={12} className="text-md-primary" />
-                                            </div>
-                                        </div>
-                                    </button>
-                                    {isExpanded && (
-                                        <div className="bg-white dark:bg-zinc-900 rounded-[28px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-2 duration-300">
-                                            {dayTx.map((t, idx) => (
-                                                <div key={t.id} className={`p-4 flex justify-between items-center ${idx !== dayTx.length - 1 ? 'border-b border-gray-50 dark:border-zinc-800' : ''}`}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                            t.type === 'income' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' :
-                                                            t.type === 'expense' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20'
-                                                        }`}>
-                                                            {t.type === 'income' ? <TrendingUp size={14} /> : 
-                                                             t.type === 'expense' ? <TrendingDown size={14} /> : <ArrowRightLeft size={14} />}
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-md-on-surface truncate max-w-[150px] dark:text-gray-100">{t.description}</p>
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.category}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className={`text-sm font-black ${
-                                                            t.type === 'income' ? 'text-emerald-600' : 
-                                                            t.type === 'expense' ? 'text-rose-600' : 'text-md-on-surface-variant dark:text-indigo-400'
-                                                        }`}>
-                                                            {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''}Tk {t.amount.toLocaleString()}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                <button 
+                  onClick={() => setIsDailyBreakdownExpanded(!isDailyBreakdownExpanded)}
+                  className="w-full flex items-center justify-between px-2 group"
+                >
+                    <div className="flex items-center gap-2">
+                        <List size={16} className="text-md-primary" />
+                        <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Daily Breakdown</h3>
                     </div>
-                ) : (
-                    <div className="p-10 text-center text-gray-400 opacity-50 bg-md-surface-container/30 rounded-3xl border border-dashed">
-                        <p className="text-[10px] font-black uppercase tracking-widest">No records found</p>
+                    <div className={`p-1.5 rounded-full bg-md-surface-container transition-transform duration-300 ${isDailyBreakdownExpanded ? 'rotate-180' : ''}`}>
+                        <ChevronDown size={14} className="text-md-primary" />
+                    </div>
+                </button>
+
+                {isDailyBreakdownExpanded && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-6">
+                        {sortedDays.length > 0 ? (
+                            sortedDays.map(day => {
+                                const dayTx = dailyGroups[day];
+                                const dayIn = dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+                                const dayOut = dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+                                const isExpanded = expandedDays[day];
+
+                                return (
+                                    <div key={day} className="space-y-2">
+                                        <button 
+                                            onClick={() => toggleDay(day)}
+                                            className="w-full flex justify-between items-center px-2 py-1 rounded-2xl hover:bg-black/5 active:bg-black/10 transition-colors text-left"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-md-primary text-white flex items-center justify-center text-[10px] font-black shadow-sm">
+                                                  <span className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                                                    {isExpanded ? <ChevronDown size={14} /> : day}
+                                                  </span>
+                                                </div>
+                                                <p className="text-xs font-black uppercase text-md-on-surface-variant">{monthName.split(' ')[0]} {day}</p>
+                                            </div>
+                                            <div className="text-right flex items-center gap-4">
+                                                <div className="flex flex-col items-end">
+                                                    <p className="text-[7px] font-black text-rose-400 uppercase tracking-widest">Out</p>
+                                                    <p className="text-[10px] font-black text-rose-600">Tk {dayOut.toLocaleString()}</p>
+                                                </div>
+                                                <div className="flex flex-col items-end border-l pl-4 border-gray-100 dark:border-zinc-800">
+                                                    <p className="text-[7px] font-black text-emerald-400 uppercase tracking-widest">Net</p>
+                                                    <p className={`text-[10px] font-black ${dayIn - dayOut >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {dayIn - dayOut >= 0 ? '+' : ''}Tk {(dayIn - dayOut).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <div className={`p-1 rounded-full bg-md-surface-container transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                                                    <ChevronDown size={12} className="text-md-primary" />
+                                                </div>
+                                            </div>
+                                        </button>
+                                        {isExpanded && (
+                                            <div className="bg-white dark:bg-zinc-900 rounded-[28px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm animate-in slide-in-from-top-2 duration-300">
+                                                {dayTx.map((t, idx) => (
+                                                    <div key={t.id} className={`p-4 flex justify-between items-center ${idx !== dayTx.length - 1 ? 'border-b border-gray-50 dark:border-zinc-800' : ''}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                                                t.type === 'income' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' :
+                                                                t.type === 'expense' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20'
+                                                            }`}>
+                                                                {t.type === 'income' ? <TrendingUp size={14} /> : 
+                                                                 t.type === 'expense' ? <TrendingDown size={14} /> : <ArrowRightLeft size={14} />}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-md-on-surface truncate max-w-[150px] dark:text-gray-100">{t.description}</p>
+                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.category}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className={`text-sm font-black ${
+                                                                t.type === 'income' ? 'text-emerald-600' : 
+                                                                t.type === 'expense' ? 'text-rose-600' : 'text-md-on-surface-variant dark:text-indigo-400'
+                                                            }`}>
+                                                                {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''}Tk {t.amount.toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="p-10 text-center text-gray-400 opacity-50 bg-md-surface-container/30 rounded-3xl border border-dashed">
+                                <p className="text-[10px] font-black uppercase tracking-widest">No records found</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
