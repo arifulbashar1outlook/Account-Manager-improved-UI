@@ -246,8 +246,8 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             </div>
          )}
 
-         <div className="px-6 pt-10 pb-6 space-y-6">
-            <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Lending</h2>
+         <div className="px-6 pt-safe space-y-6">
+            <h2 className="text-3xl font-black tracking-tight text-md-on-surface pt-10 pb-6">Lending</h2>
             
             <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-md-on-surface-variant">
@@ -420,11 +420,13 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             </div>
          )}
 
-         <div className="sticky top-0 z-10 bg-md-surface dark:bg-zinc-950 px-4 py-4 flex items-center gap-4 border-b border-gray-50 dark:border-zinc-800">
-            <button type="button" onClick={() => setSelectedPerson(null)} className="p-3 hover:bg-md-surface-container rounded-full transition-colors"><ArrowLeft size={24}/></button>
-            <div>
-                <h2 className="text-lg font-black tracking-tight">{selectedPerson}</h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-md-on-surface-variant opacity-60">Lending Directory</p>
+         <div className="sticky top-0 z-10 bg-md-surface dark:bg-zinc-950 px-4 pt-safe border-b border-gray-50 dark:border-zinc-800">
+            <div className="flex items-center gap-4 py-4">
+               <button type="button" onClick={() => setSelectedPerson(null)} className="p-3 hover:bg-md-surface-container rounded-full transition-colors"><ArrowLeft size={24}/></button>
+               <div>
+                   <h2 className="text-lg font-black tracking-tight">{selectedPerson}</h2>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-md-on-surface-variant opacity-60">Lending Directory</p>
+               </div>
             </div>
          </div>
 

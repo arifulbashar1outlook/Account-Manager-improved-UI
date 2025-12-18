@@ -221,8 +221,8 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
             </div>
          )}
 
-         <div className="px-6 pt-10 pb-6 space-y-6">
-            <h2 className="text-3xl font-black tracking-tight text-md-on-surface">History</h2>
+         <div className="px-6 pt-safe space-y-6">
+            <h2 className="text-3xl font-black tracking-tight text-md-on-surface pt-10 pb-6">History</h2>
             
             <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-md-on-surface-variant">

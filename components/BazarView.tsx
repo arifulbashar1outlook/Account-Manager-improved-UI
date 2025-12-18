@@ -143,8 +143,8 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     return (
       <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32">
-         <div className="px-6 pt-10 pb-6 space-y-4">
-            <div className="flex items-center justify-between">
+         <div className="px-6 pt-safe space-y-4">
+            <div className="flex items-center justify-between pt-10 pb-6">
                 <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Bazar List</h2>
                 <div className="flex bg-md-surface-container rounded-full p-1 shadow-inner border border-black/5">
                    <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-white rounded-full transition-all active:scale-90"><ChevronLeft size={20}/></button>

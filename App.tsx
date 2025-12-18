@@ -487,8 +487,8 @@ const App: React.FC = () => {
       />
 
       {!isFullscreenView && (
-        <header className="sticky top-0 z-50 bg-md-surface/80 dark:bg-zinc-950/80 backdrop-blur-md px-4 py-4 flex items-center justify-between shadow-sm border-b dark:border-zinc-800">
-           <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-50 bg-md-surface/80 dark:bg-zinc-950/80 backdrop-blur-md px-4 pt-safe flex items-center justify-between shadow-sm border-b dark:border-zinc-800">
+           <div className="flex items-center gap-3 py-4">
               <div className="bg-md-primary p-2.5 rounded-2xl text-white shadow-md"><LayoutDashboard size={22} /></div>
               <div>
                 <h1 className="text-xl font-black tracking-tight text-md-on-surface">Account Manager</h1>
@@ -500,7 +500,7 @@ const App: React.FC = () => {
                 </div>
               </div>
            </div>
-           <div className="flex items-center gap-1">
+           <div className="flex items-center gap-1 py-4">
               {!isOnline && (
                 <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 p-2 rounded-full flex items-center gap-2 px-3 animate-in fade-in zoom-in">
                    <WifiOff size={14} />
@@ -551,11 +551,13 @@ const App: React.FC = () => {
 
         {activeTab === 'input' && (
           <div className="animate-in slide-in-from-bottom-8 duration-500 fixed inset-0 z-[100] bg-md-surface dark:bg-zinc-950">
-             <div className="p-4 flex items-center gap-4 border-b dark:border-zinc-800 bg-white dark:bg-zinc-950">
-               <button onClick={() => setActiveTab('dashboard')} className="p-3 hover:bg-md-surface-container rounded-full transition-colors"><ArrowLeft size={24}/></button>
-               <h2 className="text-xl font-bold">New Entry</h2>
+             <div className="p-4 pt-safe flex items-center gap-4 border-b dark:border-zinc-800 bg-white dark:bg-zinc-950">
+               <div className="flex items-center gap-4 py-2">
+                  <button onClick={() => setActiveTab('dashboard')} className="p-3 hover:bg-md-surface-container rounded-full transition-colors"><ArrowLeft size={24}/></button>
+                  <h2 className="text-xl font-bold">New Entry</h2>
+               </div>
              </div>
-             <div className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-80px)]">
+             <div className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-100px)]">
                 <SalaryManager onAddTransaction={handleAddTransaction} accounts={accounts} />
                 <TransactionForm onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
              </div>
@@ -610,8 +612,8 @@ const App: React.FC = () => {
 
       {isMenuOpen && (
         <div className="fixed inset-0 z-[110] bg-black/40 animate-in fade-in duration-300" onClick={() => setIsMenuOpen(false)}>
-           <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-md-surface dark:bg-zinc-900 p-8 animate-in slide-in-from-right duration-400 rounded-l-[32px] shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-10">
+           <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-md-surface dark:bg-zinc-900 p-8 pt-safe animate-in slide-in-from-right duration-400 rounded-l-[32px] shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-10 py-4">
                 <div className="flex items-center gap-3">
                    <div className="w-10 h-10 bg-md-primary rounded-xl flex items-center justify-center text-white"><Settings size={20}/></div>
                    <h3 className="font-black text-xl">Settings</h3>
