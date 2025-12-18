@@ -420,12 +420,12 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             </div>
          )}
 
-         <div className="sticky top-0 z-10 bg-md-surface dark:bg-zinc-950 px-4 pt-safe border-b border-gray-50 dark:border-zinc-800">
-            <div className="flex items-center gap-4 py-4">
-               <button type="button" onClick={() => setSelectedPerson(null)} className="p-3 hover:bg-md-surface-container rounded-full transition-colors"><ArrowLeft size={24}/></button>
+         <div className="sticky top-0 z-10 bg-md-primary px-4 pt-safe shadow-md">
+            <div className="flex items-center gap-4 py-4 text-white">
+               <button type="button" onClick={() => setSelectedPerson(null)} className="p-3 hover:bg-white/10 rounded-full transition-colors"><ArrowLeft size={24}/></button>
                <div>
                    <h2 className="text-lg font-black tracking-tight">{selectedPerson}</h2>
-                   <p className="text-[10px] font-black uppercase tracking-widest text-md-on-surface-variant opacity-60">Lending Directory</p>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Lending Directory</p>
                </div>
             </div>
          </div>

@@ -64,14 +64,14 @@ const AccountsView: React.FC<AccountsViewProps> = ({ accounts, onUpdateAccounts,
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in slide-in-from-right duration-400">
-      <div className="sticky top-0 z-10 bg-md-surface dark:bg-zinc-950 px-4 pt-safe flex items-center gap-4 border-b border-gray-50 dark:border-zinc-800">
-        <div className="flex items-center gap-4 py-4">
-            <button type="button" onClick={onBack} className="p-3 hover:bg-md-surface-container rounded-full transition-colors text-md-on-surface">
+      <div className="sticky top-0 z-10 bg-md-primary px-4 pt-safe flex items-center gap-4 shadow-md">
+        <div className="flex items-center gap-4 py-4 text-white">
+            <button type="button" onClick={onBack} className="p-3 hover:bg-white/10 rounded-full transition-colors">
               <ArrowLeft size={24}/>
             </button>
             <div>
-                <h2 className="text-xl font-black tracking-tight text-md-on-surface">Manage Wallets</h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-md-on-surface-variant opacity-60">Account Settings</p>
+                <h2 className="text-xl font-black tracking-tight">Manage Wallets</h2>
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Account Settings</p>
             </div>
         </div>
       </div>
@@ -120,7 +120,7 @@ const AccountsView: React.FC<AccountsViewProps> = ({ accounts, onUpdateAccounts,
             
             <div className="grid gap-3">
                 {accounts.map(acc => (
-                    <div key={acc.id} className="bg-white dark:bg-zinc-900 p-5 rounded-[28px] border border-gray-50 dark:border-zinc-800 flex flex-col gap-4 shadow-sm transition-all">
+                    <div key={acc.id} className="bg-white dark:bg-zinc-900 p-5 rounded-[28px] border border-gray-100 dark:border-zinc-800 flex flex-col gap-4 shadow-sm transition-all">
                         {editingId === acc.id ? (
                            <div className="space-y-4 animate-in fade-in duration-200">
                              <div className="flex items-center gap-2">

@@ -531,14 +531,14 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 transition-colors">
       {!isFullscreenView && (
-        <header className="sticky top-0 z-50 bg-md-surface/80 dark:bg-zinc-950/80 backdrop-blur-md px-4 pt-safe flex items-center justify-between shadow-sm border-b dark:border-zinc-800">
+        <header className="sticky top-0 z-50 bg-md-primary px-4 pt-safe flex items-center justify-between shadow-lg">
            <div className="flex items-center gap-3 py-4">
-              <div className="bg-md-primary p-2.5 rounded-2xl text-white shadow-md"><LayoutDashboard size={22} /></div>
+              <div className="bg-white/20 p-2.5 rounded-2xl text-white shadow-sm backdrop-blur-md border border-white/10"><LayoutDashboard size={22} /></div>
               <div>
-                <h1 className="text-xl font-black tracking-tight text-md-on-surface">Account Manager</h1>
+                <h1 className="text-xl font-black tracking-tight text-white">Account Manager</h1>
                 <div className="flex items-center gap-1.5">
-                  <div className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-amber-500' : syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'syncing' ? 'bg-indigo-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                  <p className="text-[10px] font-black uppercase tracking-wider opacity-60">
+                  <div className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-amber-400' : syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-indigo-300 animate-pulse' : 'bg-gray-300'}`}></div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/70">
                     {!isOnline ? 'Offline' : syncStatus === 'synced' ? 'Cloud Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Local Mode'}
                   </p>
                 </div>
@@ -546,12 +546,12 @@ const App: React.FC = () => {
            </div>
            <div className="flex items-center gap-1 py-4">
               {!isOnline && (
-                <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 p-2 rounded-full flex items-center gap-2 px-3 animate-in fade-in zoom-in">
+                <div className="bg-white/10 text-white p-2 rounded-full flex items-center gap-2 px-3 animate-in fade-in zoom-in border border-white/10">
                    <WifiOff size={14} />
-                   <span className="text-[10px] font-black uppercase">Offline</span>
+                   <span className="text-[10px] font-black uppercase tracking-wider">Offline</span>
                 </div>
               )}
-              <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-md-surface-container text-md-on-surface transition-colors">
+              <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors">
                 <Menu size={24}/>
               </button>
            </div>
@@ -595,9 +595,9 @@ const App: React.FC = () => {
 
         {activeTab === 'input' && (
           <div className="animate-in slide-in-from-bottom-8 duration-500 fixed inset-0 z-[100] bg-md-surface dark:bg-zinc-950">
-             <div className="p-4 pt-safe flex items-center gap-4 border-b dark:border-zinc-800 bg-white dark:bg-zinc-950">
+             <div className="p-4 pt-safe flex items-center gap-4 border-b dark:border-zinc-800 bg-md-primary text-white shadow-lg">
                <div className="flex items-center gap-4 py-2">
-                  <button onClick={() => setActiveTab('dashboard')} className="p-3 hover:bg-md-surface-container rounded-full transition-colors"><ArrowLeft size={24}/></button>
+                  <button onClick={() => setActiveTab('dashboard')} className="p-3 hover:bg-white/10 rounded-full transition-colors text-white"><ArrowLeft size={24}/></button>
                   <h2 className="text-xl font-bold">New Entry</h2>
                </div>
              </div>
