@@ -21,30 +21,21 @@ export const clearSyncConfig = () => {
   localStorage.removeItem(SYNC_CONFIG_KEY);
 };
 
-/**
- * Merges cloud data with local data based on unique IDs.
- * Prevents duplicates and ensures both devices eventually have the same records.
- */
 export const mergeFinancialData = (local: Transaction[], cloud: Transaction[]): Transaction[] => {
   const mergedMap = new Map<string, Transaction>();
-  
-  // Add local first
   local.forEach(t => mergedMap.set(t.id, t));
-  
-  // Add cloud, replacing local if needed (or just filling gaps)
-  // Since we don't have update timestamps on transactions, we assume IDs are unique
   cloud.forEach(t => {
     if (!mergedMap.has(t.id)) {
       mergedMap.set(t.id, t);
     }
   });
-
   return Array.from(mergedMap.values()).sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 };
 
 export const pushToSheets = async (transactions: Transaction[], accounts: Account[]): Promise<boolean> => {
+  if (!navigator.onLine) return false;
   const config = getSyncConfig();
   if (!config || !config.url) return false;
 
@@ -62,16 +53,16 @@ export const pushToSheets = async (transactions: Transaction[], accounts: Accoun
     });
     
     if (!response.ok) throw new Error('Push failed');
-    
     saveSyncConfig({ ...config, lastSynced: new Date().toISOString() });
     return true;
   } catch (error) {
-    console.error('Push to Sheets failed:', error);
+    console.error('Push failed:', error);
     return false;
   }
 };
 
 export const pullFromSheets = async (): Promise<{ transactions: Transaction[], accounts: Account[] } | null> => {
+  if (!navigator.onLine) return null;
   const config = getSyncConfig();
   if (!config || !config.url) return null;
 
@@ -89,7 +80,7 @@ export const pullFromSheets = async (): Promise<{ transactions: Transaction[], a
     }
     return null;
   } catch (error) {
-    console.error('Pull from Sheets failed:', error);
+    console.error('Pull failed:', error);
     return null;
   }
 };
@@ -98,93 +89,54 @@ export const GOOGLE_APPS_SCRIPT_CODE = `
 /**
  * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC
  */
-
 function doGet(e) {
   var action = e.parameter.action;
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
   if (action === 'pull') {
     var txSheet = ss.getSheetByName("Transactions");
     var accSheet = ss.getSheetByName("Accounts");
-    
     var transactions = [];
     if (txSheet && txSheet.getLastRow() > 1) {
       var data = txSheet.getDataRange().getValues();
-      var headers = data.shift();
+      data.shift();
       transactions = data.map(function(row) {
-        return {
-          id: row[0],
-          date: row[1],
-          amount: Number(row[2]),
-          type: row[3],
-          category: row[4],
-          description: row[5],
-          accountId: row[6],
-          targetAccountId: row[7] || undefined
-        };
+        return {id: row[0], date: row[1], amount: Number(row[2]), type: row[3], category: row[4], description: row[5], accountId: row[6], targetAccountId: row[7] || undefined};
       });
     }
-
     var accounts = [];
     if (accSheet && accSheet.getLastRow() > 1) {
       var data = accSheet.getDataRange().getValues();
-      var headers = data.shift();
+      data.shift();
       accounts = data.map(function(row) {
-        return {
-          id: row[0],
-          name: row[1],
-          emoji: row[2]
-        };
+        return {id: row[0], name: row[1], emoji: row[2]};
       });
     }
-
-    return ContentService.createTextOutput(JSON.stringify({
-      transactions: transactions,
-      accounts: accounts
-    })).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({transactions: transactions, accounts: accounts})).setMimeType(ContentService.MimeType.JSON);
   }
-  return ContentService.createTextOutput("Sync active. Status: OK");
+  return ContentService.createTextOutput("Sync active").setMimeType(ContentService.MimeType.TEXT);
 }
 
 function doPost(e) {
-  var payload;
-  try {
-    payload = JSON.parse(e.postData.contents);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({status: "error", message: "Invalid JSON"}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
+  var payload = JSON.parse(e.postData.contents);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
   if (payload.action === 'push') {
-    // Handle Transactions
     var txSheet = ss.getSheetByName("Transactions") || ss.insertSheet("Transactions");
     txSheet.clear();
     txSheet.appendRow(["ID", "Date", "Amount", "Type", "Category", "Description", "AccountId", "TargetAccountId"]);
-    if (payload.transactions && payload.transactions.length > 0) {
-      var txRows = payload.transactions.map(function(t) {
+    if (payload.transactions.length > 0) {
+      var rows = payload.transactions.map(function(t) {
         return [t.id, t.date, t.amount, t.type, t.category, t.description, t.accountId, t.targetAccountId || ""];
       });
-      txSheet.getRange(2, 1, txRows.length, 8).setValues(txRows);
+      txSheet.getRange(2, 1, rows.length, 8).setValues(rows);
     }
-    
-    // Handle Accounts
     var accSheet = ss.getSheetByName("Accounts") || ss.insertSheet("Accounts");
     accSheet.clear();
     accSheet.appendRow(["ID", "Name", "Emoji"]);
-    if (payload.accounts && payload.accounts.length > 0) {
-      var accRows = payload.accounts.map(function(a) {
-        return [a.id, a.name, a.emoji];
-      });
-      accSheet.getRange(2, 1, accRows.length, 3).setValues(accRows);
+    if (payload.accounts.length > 0) {
+      var rows = payload.accounts.map(function(a) { return [a.id, a.name, a.emoji]; });
+      accSheet.getRange(2, 1, rows.length, 3).setValues(rows);
     }
-    
-    return ContentService.createTextOutput(JSON.stringify({status: "success"}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
   }
-  
-  return ContentService.createTextOutput(JSON.stringify({status: "error", message: "Unknown action"}))
-    .setMimeType(ContentService.MimeType.JSON);
 }
 `;
