@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { ShoppingBag, Plus, CalendarDays, Clock, Trash2, X, Check, ChevronLeft, ChevronRight, Store, ShoppingCart, Receipt, Hash } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
@@ -135,6 +136,8 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     const sortedDays = Object.keys(groupedStructure).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
+    const monthName = viewDate.toLocaleDateString('en-US', { month: 'long' });
+
     return (
       <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32">
          <div className="px-6 pt-10 pb-6 space-y-4">
@@ -152,7 +155,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                 </div>
                 <div className="flex justify-between items-end relative z-10">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-1">Total Monthly Bazar</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-1">Total {monthName} Bazar</p>
                         <h3 className="text-4xl font-black text-md-on-primary-container tracking-tighter">Tk {totalBazarSpend.toLocaleString()}</h3>
                     </div>
                     <div className="bg-white/40 p-3 rounded-2xl text-md-on-primary-container shadow-sm">

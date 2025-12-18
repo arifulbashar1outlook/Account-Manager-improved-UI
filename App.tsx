@@ -9,6 +9,8 @@ import {
   Menu, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   CreditCard, 
   Settings, 
   HandCoins,
@@ -44,11 +46,22 @@ import HistoryView from './components/HistoryView';
 
 const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transactions }) => {
     const [viewDate, setViewDate] = useState(new Date());
+    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
     const changeMonth = (offset: number) => {
         const newDate = new Date(viewDate);
         newDate.setMonth(newDate.getMonth() + offset);
         setViewDate(newDate);
+        setExpandedCategories({}); // Reset folds when changing months
     };
+
+    const toggleCategory = (catName: string) => {
+        setExpandedCategories(prev => ({
+            ...prev,
+            [catName]: !prev[catName]
+        }));
+    };
+
     const currentMonth = viewDate.getMonth();
     const currentYear = viewDate.getFullYear();
     
@@ -95,11 +108,13 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
         return Object.entries(groups).sort((a, b) => b[1].total - a[1].total);
     }, [monthTransactions]);
 
+    const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
     return (
         <div className="p-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300 pb-20">
             <div className="bg-md-surface-container p-4 rounded-md-card flex justify-between items-center shadow-sm">
                 <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/20 rounded-full transition-colors"><ChevronLeft size={20}/></button>
-                <h2 className="font-bold text-md-on-surface">{viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h2>
+                <h2 className="font-bold text-md-on-surface">{monthName}</h2>
                 <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/20 rounded-full transition-colors"><ChevronRight size={20}/></button>
             </div>
 
@@ -134,6 +149,53 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
                 </div>
             </div>
 
+            {/* Categorized Summary Moved Up with Fold/Unfold */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2 px-2">
+                    <Tag size={16} className="text-md-primary" />
+                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Categorized Summary</h3>
+                </div>
+                {categoryGroups.length > 0 ? (
+                    categoryGroups.map(([catName, data]) => {
+                        const isExpanded = expandedCategories[catName];
+                        return (
+                            <div key={catName} className="bg-white dark:bg-zinc-900 rounded-md-card border border-gray-100 dark:border-zinc-800 overflow-hidden shadow-sm">
+                                <button 
+                                    onClick={() => toggleCategory(catName)}
+                                    className="w-full bg-md-surface-container-high p-4 flex justify-between items-center border-b border-gray-100 dark:border-zinc-800 hover:bg-md-primary-container transition-colors active:scale-[0.99]"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        {isExpanded ? <ChevronUp size={16} className="text-md-primary" /> : <ChevronDown size={16} className="text-md-primary" />}
+                                        <h4 className="font-black text-sm text-md-on-surface">{catName}</h4>
+                                    </div>
+                                    <p className="font-black text-sm text-rose-600">Tk {data.total.toLocaleString()}</p>
+                                </button>
+                                {isExpanded && (
+                                    <div className="divide-y divide-gray-50 dark:divide-zinc-800 max-h-80 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                                        {data.transactions.map(t => (
+                                            <div key={t.id} className="p-4 flex justify-between items-start hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-bold text-md-on-surface leading-tight">{t.description}</p>
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                                        {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                    </p>
+                                                </div>
+                                                <p className="text-sm font-black text-md-on-surface">Tk {t.amount.toLocaleString()}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                ) : (
+                    <div className="p-12 text-center text-gray-400 bg-white dark:bg-zinc-900 rounded-md-card border-dashed border-2 border-gray-100 dark:border-zinc-800">
+                        <p className="text-xs font-black uppercase tracking-widest">No categorized data</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Daily Expend Sum Moved Down */}
             <div className="space-y-4">
                 <div className="flex items-center gap-2 px-2">
                     <Calendar size={16} className="text-md-primary" />
@@ -162,40 +224,6 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[] }> = ({ transact
                 ) : (
                     <div className="p-12 text-center text-gray-400 opacity-50 bg-white dark:bg-zinc-900 rounded-md-card border border-dashed">
                         <p className="text-sm font-bold uppercase tracking-widest">No spending records</p>
-                    </div>
-                )}
-            </div>
-
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 px-2">
-                    <Tag size={16} className="text-md-primary" />
-                    <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Categorized Summary</h3>
-                </div>
-                {categoryGroups.length > 0 ? (
-                    categoryGroups.map(([catName, data]) => (
-                        <div key={catName} className="bg-white dark:bg-zinc-900 rounded-md-card border border-gray-100 dark:border-zinc-800 overflow-hidden shadow-sm">
-                            <div className="bg-md-surface-container-high p-4 flex justify-between items-center border-b border-gray-100 dark:border-zinc-800">
-                                <h4 className="font-black text-sm text-md-on-surface">{catName}</h4>
-                                <p className="font-black text-sm text-rose-600">Tk {data.total.toLocaleString()}</p>
-                            </div>
-                            <div className="divide-y divide-gray-50 dark:divide-zinc-800 max-h-48 overflow-y-auto">
-                                {data.transactions.map(t => (
-                                    <div key={t.id} className="p-4 flex justify-between items-start hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-bold text-md-on-surface leading-tight">{t.description}</p>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                            </p>
-                                        </div>
-                                        <p className="text-sm font-black text-md-on-surface">Tk {t.amount.toLocaleString()}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="p-12 text-center text-gray-400 bg-white dark:bg-zinc-900 rounded-md-card border-dashed border-2 border-gray-100 dark:border-zinc-800">
-                        <p className="text-xs font-black uppercase tracking-widest">No categorized data</p>
                     </div>
                 )}
             </div>

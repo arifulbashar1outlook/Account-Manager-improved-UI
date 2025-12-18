@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Plus, ArrowDownCircle, Wallet, ArrowRight, CalendarDays } from 'lucide-react';
+import { Plus, ArrowDownCircle, Wallet, ArrowRight, CalendarDays, Tag } from 'lucide-react';
 import { Transaction, AccountType, Category, Account } from '../types';
 
 interface SalaryManagerProps {
@@ -20,6 +21,7 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
   // Received Money State
   const [receivedAmount, setReceivedAmount] = useState('');
   const [receivedDesc, setReceivedDesc] = useState('');
+  const [receivedCategory, setReceivedCategory] = useState<string>(Category.OTHER);
   const [receivedDestination, setReceivedDestination] = useState<AccountType>(accounts.find(a => a.id === 'cash')?.id || accounts[0]?.id);
 
   // Shared Date State
@@ -53,13 +55,14 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
     onAddTransaction({
       amount: parseFloat(receivedAmount),
       type: 'income',
-      category: Category.OTHER,
+      category: receivedCategory,
       description: receivedDesc || 'Received Money',
       date: date,
       accountId: receivedDestination
     });
     setReceivedAmount('');
     setReceivedDesc('');
+    setReceivedCategory(Category.OTHER);
   };
 
   return (
@@ -166,18 +169,23 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
                  </div>
              </div>
 
-             <div className="grid grid-cols-2 gap-3">
-               <div className="col-span-2">
-                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Description</label>
-                 <input
-                    type="text"
-                    value={receivedDesc}
-                    onChange={(e) => setReceivedDesc(e.target.value)}
-                    placeholder="e.g. Gift, Bonus"
-                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-emerald-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-bold"
-                  />
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+               <div>
+                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Category</label>
+                 <div className="relative">
+                    <Tag className="absolute left-3 top-3 text-emerald-500 w-4 h-4" />
+                    <select
+                        value={receivedCategory}
+                        onChange={(e) => setReceivedCategory(e.target.value)}
+                        className="w-full pl-9 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-emerald-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-black uppercase tracking-tight appearance-none"
+                    >
+                        {Object.values(Category).map(c => (
+                            <option key={c} value={c}>{c}</option>
+                        ))}
+                    </select>
+                 </div>
                </div>
-               <div className="col-span-2">
+               <div>
                  <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Deposit To</label>
                  <select
                     value={receivedDestination}
@@ -189,6 +197,17 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
                     ))}
                   </select>
                </div>
+             </div>
+
+             <div className="col-span-2">
+                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Description</label>
+                 <input
+                    type="text"
+                    value={receivedDesc}
+                    onChange={(e) => setReceivedDesc(e.target.value)}
+                    placeholder="e.g. Gift, Bonus"
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-emerald-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-bold"
+                  />
              </div>
 
              <button
