@@ -1,3 +1,4 @@
+
 import { Transaction, Account } from '../types';
 
 const SYNC_CONFIG_KEY = 'smartspend_sheets_sync_v1';
@@ -20,13 +21,34 @@ export const clearSyncConfig = () => {
   localStorage.removeItem(SYNC_CONFIG_KEY);
 };
 
+/**
+ * Merges cloud data with local data based on unique IDs.
+ * Prevents duplicates and ensures both devices eventually have the same records.
+ */
+export const mergeFinancialData = (local: Transaction[], cloud: Transaction[]): Transaction[] => {
+  const mergedMap = new Map<string, Transaction>();
+  
+  // Add local first
+  local.forEach(t => mergedMap.set(t.id, t));
+  
+  // Add cloud, replacing local if needed (or just filling gaps)
+  // Since we don't have update timestamps on transactions, we assume IDs are unique
+  cloud.forEach(t => {
+    if (!mergedMap.has(t.id)) {
+      mergedMap.set(t.id, t);
+    }
+  });
+
+  return Array.from(mergedMap.values()).sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+};
+
 export const pushToSheets = async (transactions: Transaction[], accounts: Account[]): Promise<boolean> => {
   const config = getSyncConfig();
   if (!config || !config.url) return false;
 
   try {
-    // Sending as text/plain is a common workaround for Google Apps Script CORS issues.
-    // It prevents the browser from sending a 'preflight' OPTIONS request.
     const response = await fetch(config.url, {
       method: 'POST',
       headers: {
@@ -38,6 +60,8 @@ export const pushToSheets = async (transactions: Transaction[], accounts: Accoun
         accounts
       }),
     });
+    
+    if (!response.ok) throw new Error('Push failed');
     
     saveSyncConfig({ ...config, lastSynced: new Date().toISOString() });
     return true;
@@ -58,7 +82,10 @@ export const pullFromSheets = async (): Promise<{ transactions: Transaction[], a
     
     if (data && data.transactions && data.accounts) {
        saveSyncConfig({ ...config, lastSynced: new Date().toISOString() });
-       return data;
+       return {
+         transactions: data.transactions,
+         accounts: data.accounts
+       };
     }
     return null;
   } catch (error) {
@@ -70,13 +97,6 @@ export const pullFromSheets = async (): Promise<{ transactions: Transaction[], a
 export const GOOGLE_APPS_SCRIPT_CODE = `
 /**
  * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC
- * 1. Create a Google Sheet.
- * 2. Extensions > Apps Script.
- * 3. Paste this code and Save.
- * 4. Click "Deploy" > "New Deployment".
- * 5. Select type "Web App".
- * 6. Set "Execute as: Me" and "Who has access: Anyone".
- * 7. Copy the Web App URL and paste into the app.
  */
 
 function doGet(e) {

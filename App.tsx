@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, 
@@ -19,7 +20,8 @@ import {
   X as XIcon,
   LayoutDashboard,
   CloudDownload,
-  Calendar
+  Calendar,
+  Sync
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
@@ -27,7 +29,7 @@ import ReactMarkdown from 'react-markdown';
 import { Transaction, Category, Account } from './types';
 import { getStoredTransactions, saveStoredTransactions, getStoredAccounts, saveStoredAccounts } from './services/storage';
 import { getFinancialAdvice } from './services/geminiService';
-import { getSyncConfig, pushToSheets, pullFromSheets } from './services/syncService';
+import { getSyncConfig, pushToSheets, pullFromSheets, mergeFinancialData } from './services/syncService';
 import TransactionForm from './components/TransactionForm';
 import SummaryCard from './components/SummaryCard';
 import BottomNavigation from './components/BottomNavigation';
@@ -204,43 +206,64 @@ const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>(() => getStoredAccounts());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'syncing' | 'error' | 'none'>('none');
+  const [hasSyncedOnMount, setHasSyncedOnMount] = useState(false);
   const [aiAdvice, setAiAdvice] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
 
-  // Initial Sync on Mount
-  useEffect(() => {
-    const config = getSyncConfig();
-    if (config && config.url && transactions.length === 0) {
-      handleSyncPull();
-    }
-  }, []);
-
-  // Sync Logic
+  // Sync Logic - Pull and Merge
   const handleSyncPull = async () => {
     setSyncStatus('syncing');
-    const data = await pullFromSheets();
-    if (data) {
-      setTransactions(data.transactions);
-      setAccounts(data.accounts);
+    const cloudData = await pullFromSheets();
+    if (cloudData) {
+      // Merge Transactions
+      const mergedTransactions = mergeFinancialData(transactions, cloudData.transactions);
+      setTransactions(mergedTransactions);
+      
+      // Merge Accounts - Simpler logic, Cloud wins if ID exists
+      setAccounts(prev => {
+        const mergedAccs = [...prev];
+        cloudData.accounts.forEach(ca => {
+          if (!mergedAccs.find(la => la.id === ca.id)) {
+            mergedAccs.push(ca);
+          }
+        });
+        return mergedAccs;
+      });
+
       setSyncStatus('synced');
+      setHasSyncedOnMount(true);
+      return mergedTransactions;
     } else {
       setSyncStatus('error');
+      return null;
     }
   };
 
+  // Initial Sync on Mount - Always pull and merge
+  useEffect(() => {
+    const config = getSyncConfig();
+    if (config && config.url) {
+      handleSyncPull();
+    } else {
+      setHasSyncedOnMount(true);
+    }
+  }, []);
+
+  // Save to Local Storage & Auto-Push
   useEffect(() => {
     saveStoredTransactions(transactions);
     saveStoredAccounts(accounts);
     
-    const config = getSyncConfig();
-    if (config && config.url) {
-      if (transactions.length > 0) {
+    // Only auto-push AFTER the initial merge to prevent overwriting cloud with partial data
+    if (hasSyncedOnMount) {
+      const config = getSyncConfig();
+      if (config && config.url) {
         triggerAutoPush();
       }
     }
-  }, [transactions, accounts]);
+  }, [transactions, accounts, hasSyncedOnMount]);
 
   const triggerAutoPush = async () => {
     if (!navigator.onLine) return;
@@ -299,7 +322,7 @@ const App: React.FC = () => {
       />
 
       {!isFullscreenView && (
-        <header className="sticky top-0 z-50 bg-md-surface dark:bg-zinc-950 px-4 py-4 flex items-center justify-between shadow-sm">
+        <header className="sticky top-0 z-50 bg-md-surface dark:bg-zinc-950 px-4 py-4 flex items-center justify-between shadow-sm border-b dark:border-zinc-800">
            <div className="flex items-center gap-3">
               <div className="bg-md-primary p-2.5 rounded-2xl text-white shadow-md"><LayoutDashboard size={22} /></div>
               <div>
@@ -313,6 +336,16 @@ const App: React.FC = () => {
               </div>
            </div>
            <div className="flex items-center gap-1">
+              {getSyncConfig() && (
+                <button 
+                  onClick={handleSyncPull} 
+                  disabled={syncStatus === 'syncing'}
+                  className={`p-2.5 rounded-full hover:bg-md-surface-container text-md-primary transition-all active:rotate-180 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`}
+                  title="Sync Now"
+                >
+                  <RefreshCw size={22}/>
+                </button>
+              )}
               <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-md-surface-container text-md-on-surface transition-colors">
                 <Menu size={24}/>
               </button>
