@@ -20,8 +20,10 @@ import {
   X as XIcon,
   LayoutDashboard,
   CloudDownload,
+  CloudUpload,
   Calendar,
-  Download
+  Download,
+  Upload
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
@@ -373,19 +375,26 @@ const App: React.FC = () => {
                 </div>
               </div>
            </div>
-           <div className="flex items-center gap-1">
+           <div className="flex items-center gap-0.5">
               {getSyncConfig() && (
-                <button 
-                  onClick={async () => {
-                    await triggerAutoPush();
-                    await handleSyncPull();
-                  }} 
-                  disabled={syncStatus === 'syncing'}
-                  className={`p-2.5 rounded-full hover:bg-md-surface-container text-md-primary transition-all active:rotate-180 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`}
-                  title="Sync Now"
-                >
-                  <RefreshCw size={22}/>
-                </button>
+                <>
+                  <button 
+                    onClick={() => triggerAutoPush()} 
+                    disabled={syncStatus === 'syncing'}
+                    className={`p-2.5 rounded-full hover:bg-md-surface-container text-md-primary transition-all active:scale-90 ${syncStatus === 'syncing' ? 'animate-pulse' : ''}`}
+                    title="Push Data"
+                  >
+                    <CloudUpload size={20}/>
+                  </button>
+                  <button 
+                    onClick={() => handleSyncPull()} 
+                    disabled={syncStatus === 'syncing'}
+                    className={`p-2.5 rounded-full hover:bg-md-surface-container text-md-primary transition-all active:scale-90 ${syncStatus === 'syncing' ? 'animate-pulse' : ''}`}
+                    title="Pull Data"
+                  >
+                    <CloudDownload size={20}/>
+                  </button>
+                </>
               )}
               <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-md-surface-container text-md-on-surface transition-colors">
                 <Menu size={24}/>
@@ -526,7 +535,22 @@ const App: React.FC = () => {
                  <MenuBtn onClick={() => { setShowConfig(true); setIsMenuOpen(false); }} icon={RefreshCw} label="Cloud Sync Setup" />
                  <MenuBtn onClick={() => { setActiveTab('wallet-manager'); setIsMenuOpen(false); }} icon={CreditCard} label="Manage Wallets" />
                  <MenuBtn onClick={() => { setActiveTab('lending'); setIsMenuOpen(false); }} icon={HandCoins} label="Debt & Lending" />
-                 <MenuBtn onClick={() => { handleSyncPull(); setIsMenuOpen(false); }} icon={CloudDownload} label="Force Sync Pull" />
+                 <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t dark:border-zinc-800">
+                    <button 
+                      onClick={() => { triggerAutoPush(); setIsMenuOpen(false); }}
+                      className="flex flex-col items-center gap-2 p-4 bg-md-surface-container rounded-2xl hover:bg-md-primary-container transition-all active:scale-95"
+                    >
+                      <CloudUpload size={20} className="text-md-primary" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-md-on-surface">Push Data</span>
+                    </button>
+                    <button 
+                      onClick={() => { handleSyncPull(); setIsMenuOpen(false); }}
+                      className="flex flex-col items-center gap-2 p-4 bg-md-surface-container rounded-2xl hover:bg-md-primary-container transition-all active:scale-95"
+                    >
+                      <CloudDownload size={20} className="text-md-primary" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-md-on-surface">Pull Data</span>
+                    </button>
+                 </div>
                  {installPrompt && (
                    <button 
                     onClick={handleInstallClick} 
