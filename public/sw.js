@@ -1,10 +1,11 @@
 
-const CACHE_NAME = 'smartspend-v3';
+const CACHE_NAME = 'smartspend-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon.svg',
+  'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap'
 ];
 
@@ -31,7 +32,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   
-  // Stale-while-revalidate for local assets and CDN resources
+  // Stale-while-revalidate strategy for UI assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {

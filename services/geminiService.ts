@@ -5,10 +5,9 @@ import { GoogleGenAI } from "@google/genai";
  * Suggests a category for an expense description using Gemini AI.
  */
 export const categorizeDescription = async (description: string): Promise<string | null> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === "undefined") return null;
+  if (!process.env.API_KEY || process.env.API_KEY === "undefined") return null;
 
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
      const response = await ai.models.generateContent({

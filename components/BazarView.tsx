@@ -136,7 +136,10 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     const sortedDays = Object.keys(groupedStructure).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
-    const monthName = viewDate.toLocaleDateString('en-US', { month: 'long' });
+    // Formatted date label for header: e.g., "Dec 25"
+    const monthShort = viewDate.toLocaleDateString('en-US', { month: 'short' });
+    const yearShort = viewDate.getFullYear().toString().slice(-2);
+    const dateLabel = `${monthShort} ${yearShort}`;
 
     return (
       <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32">
@@ -155,7 +158,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                 </div>
                 <div className="flex justify-between items-end relative z-10">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-1">Total {monthName} Bazar</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-1">Total in {dateLabel}</p>
                         <h3 className="text-4xl font-black text-md-on-primary-container tracking-tighter">Tk {totalBazarSpend.toLocaleString()}</h3>
                     </div>
                     <div className="bg-white/40 p-3 rounded-2xl text-md-on-primary-container shadow-sm">
