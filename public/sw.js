@@ -1,35 +1,62 @@
-// KILL SWITCH SERVICE WORKER
-// This worker replaces the old caching worker.
-// It deletes all caches and forces network-only requests.
 
-const CACHE_NAME = 'smartspend-cleanup-final';
+const CACHE_NAME = 'smartspend-v2';
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon.svg'
+];
 
+// Install Event - Pre-cache core assets
 self.addEventListener('install', (event) => {
-  // Activate immediately
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('Pre-caching offline assets');
+      return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
   self.skipWaiting();
-  console.log('Cleanup Service Worker Installed');
 });
 
+// Activate Event - Clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      // Take control of all pages immediately
-      self.clients.claim(),
-      // Delete ALL caches found
-      caches.keys().then((keyList) => {
-        return Promise.all(
-          keyList.map((key) => {
-            console.log('Deleting old cache:', key);
+    caches.keys().then((keyList) => {
+      return Promise.all(
+        keyList.map((key) => {
+          if (key !== CACHE_NAME) {
+            console.log('Removing old cache:', key);
             return caches.delete(key);
-          })
-        );
-      })
-    ])
+          }
+        })
+      );
+    })
   );
-  console.log('Cleanup Service Worker Activated - Caches Cleared');
+  self.clients.claim();
 });
 
+// Fetch Event - Stale-while-revalidate strategy
 self.addEventListener('fetch', (event) => {
-  // Network Only - bypass cache completely
-  event.respondWith(fetch(event.request));
+  // Only handle GET requests and skip browser extensions
+  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) return;
+
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Cache the new response
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // If network fails and no cache, we just fail gracefully
+        return cachedResponse;
+      });
+
+      return cachedResponse || fetchPromise;
+    })
+  );
 });

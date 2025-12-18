@@ -21,7 +21,7 @@ import {
   LayoutDashboard,
   CloudDownload,
   Calendar,
-  Sync
+  Download
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
@@ -211,6 +211,27 @@ const App: React.FC = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  // PWA Install Logic
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
 
   // Sync Logic - Pull and Merge
   const handleSyncPull = useCallback(async (silent = false) => {
@@ -506,6 +527,15 @@ const App: React.FC = () => {
                  <MenuBtn onClick={() => { setActiveTab('wallet-manager'); setIsMenuOpen(false); }} icon={CreditCard} label="Manage Wallets" />
                  <MenuBtn onClick={() => { setActiveTab('lending'); setIsMenuOpen(false); }} icon={HandCoins} label="Debt & Lending" />
                  <MenuBtn onClick={() => { handleSyncPull(); setIsMenuOpen(false); }} icon={CloudDownload} label="Force Sync Pull" />
+                 {installPrompt && (
+                   <button 
+                    onClick={handleInstallClick} 
+                    className="w-full flex items-center gap-5 py-5 px-6 rounded-2xl bg-md-primary-container text-md-on-primary-container text-sm font-black transition-all active:scale-95 mt-4"
+                   >
+                     <div className="p-2.5 bg-md-primary text-white rounded-xl shadow-sm"><Download size={20} /></div>
+                     Install App
+                   </button>
+                 )}
               </div>
               <div className="absolute bottom-10 left-8 right-8 text-center">
                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">SmartSpend v1.2</p>
