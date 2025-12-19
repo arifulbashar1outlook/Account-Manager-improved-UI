@@ -34,7 +34,12 @@ export const mergeFinancialData = (local: Transaction[], cloud: Transaction[]): 
   );
 };
 
-export const pushToSheets = async (transactions: Transaction[], accounts: Account[]): Promise<boolean> => {
+export const pushToSheets = async (
+  transactions: Transaction[], 
+  accounts: Account[],
+  templates: string[],
+  toBuyList: string[]
+): Promise<boolean> => {
   if (!navigator.onLine) return false;
   const config = getSyncConfig();
   if (!config || !config.url) return false;
@@ -48,7 +53,9 @@ export const pushToSheets = async (transactions: Transaction[], accounts: Accoun
       body: JSON.stringify({
         action: 'push',
         transactions,
-        accounts
+        accounts,
+        templates,
+        toBuyList
       }),
     });
     
@@ -61,7 +68,12 @@ export const pushToSheets = async (transactions: Transaction[], accounts: Accoun
   }
 };
 
-export const pullFromSheets = async (): Promise<{ transactions: Transaction[], accounts: Account[] } | null> => {
+export const pullFromSheets = async (): Promise<{ 
+  transactions: Transaction[], 
+  accounts: Account[],
+  templates: string[],
+  toBuyList: string[]
+} | null> => {
   if (!navigator.onLine) return null;
   const config = getSyncConfig();
   if (!config || !config.url) return null;
@@ -75,7 +87,9 @@ export const pullFromSheets = async (): Promise<{ transactions: Transaction[], a
        saveSyncConfig({ ...config, lastSynced: new Date().toISOString() });
        return {
          transactions: data.transactions,
-         accounts: data.accounts
+         accounts: data.accounts,
+         templates: data.templates || [],
+         toBuyList: data.toBuyList || []
        };
     }
     return null;
@@ -87,7 +101,7 @@ export const pullFromSheets = async (): Promise<{ transactions: Transaction[], a
 
 export const GOOGLE_APPS_SCRIPT_CODE = `
 /**
- * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC
+ * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC (v2 - Multi-Device Full Sync)
  */
 function doGet(e) {
   var action = e.parameter.action;
@@ -95,6 +109,9 @@ function doGet(e) {
   if (action === 'pull') {
     var txSheet = ss.getSheetByName("Transactions");
     var accSheet = ss.getSheetByName("Accounts");
+    var tmplSheet = ss.getSheetByName("BazarTemplates");
+    var buySheet = ss.getSheetByName("ToBuyList");
+    
     var transactions = [];
     if (txSheet && txSheet.getLastRow() > 1) {
       var data = txSheet.getDataRange().getValues();
@@ -103,15 +120,34 @@ function doGet(e) {
         return {id: row[0], date: row[1], amount: Number(row[2]), type: row[3], category: row[4], description: row[5], accountId: row[6], targetAccountId: row[7] || undefined};
       });
     }
+
     var accounts = [];
     if (accSheet && accSheet.getLastRow() > 1) {
       var data = accSheet.getDataRange().getValues();
       data.shift();
       accounts = data.map(function(row) {
-        return {id: row[0], name: row[1], emoji: row[2]};
+        return {id: row[0], name: row[1], color: row[2]};
       });
     }
-    return ContentService.createTextOutput(JSON.stringify({transactions: transactions, accounts: accounts})).setMimeType(ContentService.MimeType.JSON);
+
+    var templates = [];
+    if (tmplSheet && tmplSheet.getLastRow() > 0) {
+      templates = tmplSheet.getDataRange().getValues().map(function(r) { return r[0]; });
+    }
+
+    var toBuyList = [];
+    if (buySheet && buySheet.getLastRow() > 0) {
+      toBuyList = buySheet.getDataRange().getValues().map(function(r) { return r[0]; });
+    }
+
+    var result = {
+      transactions: transactions, 
+      accounts: accounts,
+      templates: templates,
+      toBuyList: toBuyList
+    };
+
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
   }
   return ContentService.createTextOutput("Sync active").setMimeType(ContentService.MimeType.TEXT);
 }
@@ -119,23 +155,44 @@ function doGet(e) {
 function doPost(e) {
   var payload = JSON.parse(e.postData.contents);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
   if (payload.action === 'push') {
+    // 1. Transactions
     var txSheet = ss.getSheetByName("Transactions") || ss.insertSheet("Transactions");
     txSheet.clear();
     txSheet.appendRow(["ID", "Date", "Amount", "Type", "Category", "Description", "AccountId", "TargetAccountId"]);
-    if (payload.transactions.length > 0) {
+    if (payload.transactions && payload.transactions.length > 0) {
       var rows = payload.transactions.map(function(t) {
         return [t.id, t.date, t.amount, t.type, t.category, t.description, t.accountId, t.targetAccountId || ""];
       });
       txSheet.getRange(2, 1, rows.length, 8).setValues(rows);
     }
+
+    // 2. Accounts
     var accSheet = ss.getSheetByName("Accounts") || ss.insertSheet("Accounts");
     accSheet.clear();
-    accSheet.appendRow(["ID", "Name", "Emoji"]);
-    if (payload.accounts.length > 0) {
-      var rows = payload.accounts.map(function(a) { return [a.id, a.name, a.emoji]; });
+    accSheet.appendRow(["ID", "Name", "Color"]);
+    if (payload.accounts && payload.accounts.length > 0) {
+      var rows = payload.accounts.map(function(a) { return [a.id, a.name, a.color]; });
       accSheet.getRange(2, 1, rows.length, 3).setValues(rows);
     }
+
+    // 3. Bazar Templates
+    var tmplSheet = ss.getSheetByName("BazarTemplates") || ss.insertSheet("BazarTemplates");
+    tmplSheet.clear();
+    if (payload.templates && payload.templates.length > 0) {
+      var rows = payload.templates.map(function(t) { return [t]; });
+      tmplSheet.getRange(1, 1, rows.length, 1).setValues(rows);
+    }
+
+    // 4. To Buy List
+    var buySheet = ss.getSheetByName("ToBuyList") || ss.insertSheet("ToBuyList");
+    buySheet.clear();
+    if (payload.toBuyList && payload.toBuyList.length > 0) {
+      var rows = payload.toBuyList.map(function(t) { return [t]; });
+      buySheet.getRange(1, 1, rows.length, 1).setValues(rows);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
   }
 }

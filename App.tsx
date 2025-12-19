@@ -146,7 +146,6 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
 
     return (
         <div className="p-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300 pb-32">
-            {/* Month Picker */}
             <div className="bg-md-surface-container p-4 rounded-md-card flex justify-between items-center shadow-sm">
                 <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white/20 rounded-full transition-colors"><ChevronLeft size={20}/></button>
                 <div className="text-center">
@@ -156,7 +155,6 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                 <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white/20 rounded-full transition-colors"><ChevronRight size={20}/></button>
             </div>
 
-            {/* Monthly Stats */}
             <div className="grid grid-cols-2 gap-3">
                 <StatBox label="Income" amount={stats.income} color="text-emerald-600" bg="bg-emerald-50" icon={TrendingUp} />
                 <StatBox label="Expense" amount={stats.expense} color="text-rose-600" bg="bg-rose-50" icon={TrendingDown} />
@@ -164,7 +162,6 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                 <StatBox label="Withdraw" amount={stats.withdraw} color="text-amber-600" bg="bg-amber-50" icon={Landmark} />
             </div>
 
-            {/* Yearly Summary Card */}
             <div className="bg-md-primary-container p-6 rounded-md-card border border-md-primary/10 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                     <Target size={18} className="text-md-on-primary-container" />
@@ -186,13 +183,11 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                 </div>
             </div>
 
-            {/* Category Breakdown Selection */}
             <div className="space-y-4">
                 <div className="flex items-center gap-2 px-2">
                     <Tag size={16} className="text-md-primary" />
                     <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Category Breakdown</h3>
                 </div>
-
                 <div className="flex bg-md-surface-container p-1 rounded-full shadow-inner overflow-x-auto no-scrollbar">
                   {[
                     { id: 'expense', label: 'Spent', icon: TrendingDown },
@@ -204,9 +199,7 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                       key={btn.id}
                       onClick={() => { setActiveReportType(btn.id as any); setExpandedCategories({}); }}
                       className={`flex-1 min-w-[80px] py-2.5 text-[10px] font-black rounded-full transition-all uppercase tracking-widest flex flex-col items-center gap-1 ${
-                        activeReportType === btn.id 
-                          ? 'bg-md-primary text-white shadow-md' 
-                          : 'text-md-on-surface-variant hover:bg-black/5'
+                        activeReportType === btn.id ? 'bg-md-primary text-white shadow-md' : 'text-md-on-surface-variant hover:bg-black/5'
                       }`}
                     >
                       <btn.icon size={14} />
@@ -214,30 +207,20 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                     </button>
                   ))}
                 </div>
-
                 <div className="space-y-3">
                   {categoryGroups.length > 0 ? (
                       categoryGroups.map(([catName, data]) => {
                           const isExpanded = expandedCategories[catName];
-                          const typeColors: Record<string, string> = {
-                              income: 'text-emerald-600',
-                              expense: 'text-rose-600',
-                              transfer: 'text-indigo-600',
-                              withdraw: 'text-amber-600'
-                          };
                           return (
                               <div key={catName} className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-100 dark:border-zinc-800 overflow-hidden shadow-sm transition-all">
-                                  <button 
-                                      onClick={() => toggleCategory(catName)}
-                                      className="w-full p-4 flex justify-between items-center hover:bg-md-surface-container transition-colors"
-                                  >
+                                  <button onClick={() => toggleCategory(catName)} className="w-full p-4 flex justify-between items-center hover:bg-md-surface-container">
                                       <div className="flex items-center gap-3">
                                           <div className={`p-2 rounded-xl bg-md-surface-container ${isExpanded ? 'rotate-180' : ''} transition-transform`}>
                                             <ChevronDown size={14} className="text-md-primary" />
                                           </div>
                                           <h4 className="font-black text-sm text-md-on-surface">{catName}</h4>
                                       </div>
-                                      <p className={`font-black text-sm ${typeColors[activeReportType]}`}>Tk {data.total.toLocaleString()}</p>
+                                      <p className={`font-black text-sm ${activeReportType === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>Tk {data.total.toLocaleString()}</p>
                                   </button>
                                   {isExpanded && (
                                       <div className="divide-y divide-gray-50 dark:divide-zinc-800 bg-gray-50 dark:bg-zinc-950/50">
@@ -248,16 +231,12 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                                                       <div className="space-y-0.5">
                                                           <p className="text-sm font-bold text-md-on-surface leading-tight dark:text-gray-100">{t.description}</p>
                                                           <div className="flex items-center gap-1.5 mt-0.5">
-                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                                                  {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                                              </p>
+                                                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</p>
                                                               <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>
-                                                                  {acc?.name || 'Wallet'}
-                                                              </p>
+                                                              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
                                                           </div>
                                                       </div>
-                                                      <p className={`text-sm font-black ${typeColors[activeReportType]}`}>Tk {t.amount.toLocaleString()}</p>
+                                                      <p className={`text-sm font-black ${activeReportType === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>Tk {t.amount.toLocaleString()}</p>
                                                   </div>
                                               );
                                           })}
@@ -274,12 +253,8 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                 </div>
             </div>
 
-            {/* Daily Activity */}
             <div className="space-y-4">
-                <button 
-                  onClick={() => setIsDailyBreakdownExpanded(!isDailyBreakdownExpanded)}
-                  className="w-full flex items-center justify-between px-2 group"
-                >
+                <button onClick={() => setIsDailyBreakdownExpanded(!isDailyBreakdownExpanded)} className="w-full flex items-center justify-between px-2 group">
                     <div className="flex items-center gap-2">
                         <List size={16} className="text-md-primary" />
                         <h3 className="font-black text-xs uppercase tracking-[0.2em] text-md-on-surface-variant">Daily Breakdown</h3>
@@ -288,7 +263,6 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                         <ChevronDown size={14} className="text-md-primary" />
                     </div>
                 </button>
-
                 {isDailyBreakdownExpanded && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-6">
                         {sortedDays.length > 0 ? (
@@ -297,18 +271,12 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                                 const dayIn = dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
                                 const dayOut = dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
                                 const isExpanded = expandedDays[day];
-
                                 return (
                                     <div key={day} className="space-y-2">
-                                        <button 
-                                            onClick={() => toggleDay(day)}
-                                            className="w-full flex justify-between items-center px-2 py-1 rounded-2xl hover:bg-black/5 active:bg-black/10 transition-colors text-left"
-                                        >
+                                        <button onClick={() => toggleDay(day)} className="w-full flex justify-between items-center px-2 py-1 rounded-2xl hover:bg-black/5 active:bg-black/10 transition-colors text-left">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-md-primary text-white flex items-center justify-center text-[10px] font-black shadow-sm">
-                                                  <span className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                                    {isExpanded ? <ChevronDown size={14} /> : day}
-                                                  </span>
+                                                  <span>{isExpanded ? <ChevronDown size={14} /> : day}</span>
                                                 </div>
                                                 <p className="text-xs font-black uppercase text-md-on-surface-variant">{monthName.split(' ')[0]} {day}</p>
                                             </div>
@@ -316,12 +284,6 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                                                 <div className="flex flex-col items-end">
                                                     <p className="text-[7px] font-black text-rose-400 uppercase tracking-widest">Out</p>
                                                     <p className="text-[10px] font-black text-rose-600">Tk {dayOut.toLocaleString()}</p>
-                                                </div>
-                                                <div className="flex flex-col items-end border-l pl-4 border-gray-100 dark:border-zinc-800">
-                                                    <p className="text-[7px] font-black text-emerald-400 uppercase tracking-widest">Net</p>
-                                                    <p className={`text-[10px] font-black ${dayIn - dayOut >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                        {dayIn - dayOut >= 0 ? '+' : ''}Tk {(dayIn - dayOut).toLocaleString()}
-                                                    </p>
                                                 </div>
                                                 <div className={`p-1 rounded-full bg-md-surface-container transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
                                                     <ChevronDown size={12} className="text-md-primary" />
@@ -335,30 +297,15 @@ const FullMonthlyReport: React.FC<{ transactions: Transaction[], accounts: Accou
                                                     return (
                                                         <div key={t.id} className={`p-4 flex justify-between items-center ${idx !== dayTx.length - 1 ? 'border-b border-gray-50 dark:border-zinc-800' : ''}`}>
                                                             <div className="flex items-center gap-3">
-                                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                                    t.type === 'income' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20' :
-                                                                    t.type === 'expense' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20'
-                                                                }`}>
-                                                                    {t.type === 'income' ? <TrendingUp size={14} /> : 
-                                                                    t.type === 'expense' ? <TrendingDown size={14} /> : <ArrowRightLeft size={14} />}
+                                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                                    {t.type === 'income' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                                                                 </div>
                                                                 <div>
                                                                     <p className="text-sm font-bold text-md-on-surface truncate max-w-[150px] dark:text-gray-100">{t.description}</p>
-                                                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.category}</p>
-                                                                        <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
-                                                                        <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
-                                                                    </div>
+                                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.category}</p>
                                                                 </div>
                                                             </div>
-                                                            <div className="text-right">
-                                                                <p className={`text-sm font-black ${
-                                                                    t.type === 'income' ? 'text-emerald-600' : 
-                                                                    t.type === 'expense' ? 'text-rose-600' : 'text-md-on-surface-variant dark:text-indigo-400'
-                                                                }`}>
-                                                                    {t.type === 'income' ? '+' : t.type === 'expense' ? '-' : ''}Tk {t.amount.toLocaleString()}
-                                                                </p>
-                                                            </div>
+                                                            <p className={`text-sm font-black ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>Tk {t.amount.toLocaleString()}</p>
                                                         </div>
                                                     );
                                                 })}
@@ -392,13 +339,31 @@ const StatBox = ({ label, amount, color, bg, icon: Icon }: any) => (
 const App: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(() => getStoredTransactions());
   const [accounts, setAccounts] = useState<Account[]>(() => getStoredAccounts());
+  const [bazarTemplates, setBazarTemplates] = useState<string[]>(['Potato', 'Onion', 'Rice', 'Oil', 'Egg', 'Milk']);
+  const [toBuyList, setToBuyList] = useState<string[]>([]);
+  
   const [activeTab, setActiveTab] = useState('dashboard');
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'syncing' | 'error' | 'none'>('none');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [hasSyncedOnMount, setHasSyncedOnMount] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Sync Logic - Pull and Merge
+  // TRIGGER AUTO PUSH - Updated to include Bazar Data
+  const triggerAutoPush = useCallback(async (overrides?: { txs?: Transaction[], accs?: Account[], tmpl?: string[], buy?: string[] }) => {
+    if (!navigator.onLine) {
+        setSyncStatus('pending');
+        return;
+    }
+    setSyncStatus('syncing');
+    const success = await pushToSheets(
+      overrides?.txs || transactions, 
+      overrides?.accs || accounts,
+      overrides?.tmpl || bazarTemplates,
+      overrides?.buy || toBuyList
+    );
+    setSyncStatus(success ? 'synced' : 'error');
+  }, [transactions, accounts, bazarTemplates, toBuyList]);
+
+  // SYNC PULL - Updated to fetch Bazar Data
   const handleSyncPull = useCallback(async (silent = false) => {
     if (!navigator.onLine) {
         setSyncStatus('none');
@@ -408,101 +373,82 @@ const App: React.FC = () => {
     
     const cloudData = await pullFromSheets();
     if (cloudData) {
+      // 1. Merge Transactions
       setTransactions(prev => {
         const merged = mergeFinancialData(prev, cloudData.transactions);
         saveStoredTransactions(merged);
         return merged;
       });
       
+      // 2. Merge Accounts
       setAccounts(prev => {
         const mergedAccs = [...prev];
         cloudData.accounts.forEach(ca => {
-          if (!mergedAccs.find(la => la.id === ca.id)) {
-            mergedAccs.push(ca);
-          }
+          if (!mergedAccs.find(la => la.id === ca.id)) mergedAccs.push(ca);
         });
         saveStoredAccounts(mergedAccs);
         return mergedAccs;
       });
 
+      // 3. Set Bazar State
+      setBazarTemplates(cloudData.templates);
+      setToBuyList(cloudData.toBuyList);
+
       setSyncStatus('synced');
-      setHasSyncedOnMount(true);
     } else {
       if (!silent) setSyncStatus('error');
     }
   }, []);
 
-  const triggerAutoPush = useCallback(async () => {
-    if (!navigator.onLine) {
-        setSyncStatus('pending');
-        return;
-    }
-    setSyncStatus('syncing');
-    const success = await pushToSheets(getStoredTransactions(), getStoredAccounts());
-    setSyncStatus(success ? 'synced' : 'error');
-  }, []);
-
-  // Connection Event Listeners
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      handleSyncPull(true).then(() => triggerAutoPush());
-    };
+    const handleOnline = () => { setIsOnline(true); handleSyncPull(true).then(() => triggerAutoPush()); };
     const handleOffline = () => setIsOnline(false);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
   }, [handleSyncPull, triggerAutoPush]);
 
-  // Initial Sync and Polling Setup
   useEffect(() => {
     const config = getSyncConfig();
     if (config && config.url && navigator.onLine) {
       handleSyncPull();
       const pollInterval = setInterval(() => {
         if (navigator.onLine) handleSyncPull(true);
-      }, 15000); // 15s poll
+      }, 10000); // 10s Background Refresh
       return () => clearInterval(pollInterval);
-    } else {
-      setHasSyncedOnMount(true);
     }
   }, [handleSyncPull]);
 
-  // Handle local changes
   const handleAddTransaction = (t: Omit<Transaction, 'id'>) => {
     const newTx = {...t, id: uuidv4()};
     const updated = [newTx, ...transactions];
     setTransactions(updated);
     saveStoredTransactions(updated);
-    triggerAutoPush();
+    triggerAutoPush({ txs: updated });
   };
 
   const handleUpdateTransaction = (updatedTx: Transaction) => {
     const updated = transactions.map(t => t.id === updatedTx.id ? updatedTx : t);
     setTransactions(updated);
     saveStoredTransactions(updated);
-    triggerAutoPush();
+    triggerAutoPush({ txs: updated });
   };
 
   const handleDeleteTransaction = (id: string) => {
     const updated = transactions.filter(t => t.id !== id);
     setTransactions(updated);
     saveStoredTransactions(updated);
-    triggerAutoPush();
+    triggerAutoPush({ txs: updated });
   };
 
-  const handleUpdateAccounts = (updater: Account[] | ((prev: Account[]) => Account[])) => {
-    setAccounts(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      saveStoredAccounts(next);
-      triggerAutoPush();
-      return next;
-    });
+  const updateBazarTemplates = (newTemplates: string[]) => {
+    setBazarTemplates(newTemplates);
+    triggerAutoPush({ tmpl: newTemplates });
+  };
+
+  const updateToBuyList = (newList: string[]) => {
+    setToBuyList(newList);
+    triggerAutoPush({ buy: newList });
   };
 
   const accountBalances = useMemo(() => {
@@ -542,17 +488,9 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1 py-4">
-            {!isOnline && (
-              <div className="bg-white/10 text-white p-2 rounded-full flex items-center gap-2 px-3 animate-in fade-in zoom-in border border-white/10">
-                  <WifiOff size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-wider">Offline</span>
-              </div>
-            )}
-            <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors">
-              <Menu size={24}/>
-            </button>
-          </div>
+          <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors">
+            <Menu size={24}/>
+          </button>
       </header>
 
       <main className="max-w-md mx-auto">
@@ -562,26 +500,20 @@ const App: React.FC = () => {
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-2">Net Worth Balance</p>
                 <h2 className="text-4xl font-black text-md-on-primary-container tracking-tighter">Tk {summary.bal.toLocaleString()}</h2>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
                <SummaryCard title="Monthly In" amount={summary.inc} icon={TrendingUp} colorClass="text-emerald-700" bgClass="bg-emerald-100" />
                <SummaryCard title="Monthly Out" amount={summary.exp} icon={TrendingDown} colorClass="text-rose-700" bgClass="bg-rose-100" />
             </div>
-
             <div className="space-y-4">
                <div className="flex justify-between items-center ml-1">
                  <h3 className="font-black text-[11px] uppercase tracking-widest text-md-on-surface-variant">Your Wallets</h3>
-                 <button onClick={() => setActiveTab('wallet-manager')} className="text-[10px] font-black uppercase tracking-widest text-md-primary px-4 py-1.5 bg-md-primary-container rounded-full">Manage</button>
                </div>
                <div className="grid gap-3">
                  {accounts.map(acc => (
-                   <div key={acc.id} className="bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-gray-100 dark:border-zinc-800 flex justify-between items-center shadow-sm hover:scale-[1.01] transition-all">
-                      <div className="flex items-center gap-4">
-                        <p className="font-black text-lg tracking-tight" style={{ color: acc.color }}>{acc.name}</p>
-                      </div>
+                   <div key={acc.id} className="bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-gray-100 dark:border-zinc-800 flex justify-between items-center shadow-sm">
+                      <p className="font-black text-lg tracking-tight" style={{ color: acc.color }}>{acc.name}</p>
                       <div className="text-right">
                         <p className="font-black text-sm text-md-on-surface">Tk {accountBalances[acc.id]?.toLocaleString()}</p>
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Active Balance</p>
                       </div>
                    </div>
                  ))}
@@ -605,6 +537,10 @@ const App: React.FC = () => {
             <BazarView 
                 transactions={transactions} 
                 accounts={accounts} 
+                templates={bazarTemplates}
+                setTemplates={updateBazarTemplates}
+                toBuyList={toBuyList}
+                setToBuyList={updateToBuyList}
                 onAddTransaction={handleAddTransaction} 
                 onUpdateTransaction={handleUpdateTransaction} 
                 onDeleteTransaction={handleDeleteTransaction} 
@@ -612,44 +548,14 @@ const App: React.FC = () => {
         )}
         
         {activeTab === 'full-report' && <FullMonthlyReport transactions={transactions} accounts={accounts} />}
-        {activeTab === 'history' && (
-          <HistoryView 
-              transactions={transactions} 
-              accounts={accounts} 
-              onUpdateTransaction={handleUpdateTransaction} 
-              onDeleteTransaction={handleDeleteTransaction} 
-          />
-        )}
-        {activeTab === 'lending' && (
-          <LendingView 
-              transactions={transactions} 
-              accounts={accounts} 
-              onAddTransaction={handleAddTransaction} 
-              onUpdateTransaction={handleUpdateTransaction} 
-              onDeleteTransaction={handleDeleteTransaction} 
-          />
-        )}
-        {activeTab === 'wallet-manager' && (
-          <AccountsView 
-              accounts={accounts} 
-              onUpdateAccounts={handleUpdateAccounts} 
-              onBack={() => setActiveTab('dashboard')} 
-          />
-        )}
-        {activeTab === 'sync-setup' && (
-          <SyncView 
-              onBack={() => setActiveTab('dashboard')} 
-              onPullData={handleSyncPull}
-          />
-        )}
+        {activeTab === 'history' && <HistoryView transactions={transactions} accounts={accounts} onUpdateTransaction={handleUpdateTransaction} onDeleteTransaction={handleDeleteTransaction} />}
+        {activeTab === 'lending' && <LendingView transactions={transactions} accounts={accounts} onAddTransaction={handleAddTransaction} onUpdateTransaction={handleUpdateTransaction} onDeleteTransaction={handleDeleteTransaction} />}
+        {activeTab === 'wallet-manager' && <AccountsView accounts={accounts} onUpdateAccounts={accs => { setAccounts(accs); triggerAutoPush({ accs: accs as Account[] }); }} onBack={() => setActiveTab('dashboard')} />}
+        {activeTab === 'sync-setup' && <SyncView onBack={() => setActiveTab('dashboard')} onPullData={handleSyncPull} />}
       </main>
 
-      {/* Floating Action Button - Only visible on relevant tabs */}
       {activeTab === 'dashboard' && (
-        <button 
-          onClick={() => setActiveTab('input')}
-          className="fixed bottom-[100px] right-6 w-16 h-16 bg-md-primary text-white rounded-3xl shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40"
-        >
+        <button onClick={() => setActiveTab('input')} className="fixed bottom-[100px] right-6 w-16 h-16 bg-md-primary text-white rounded-3xl shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40">
           <Plus size={32} strokeWidth={3} />
         </button>
       )}
@@ -658,26 +564,13 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[110] bg-black/40 animate-in fade-in duration-300" onClick={() => setIsMenuOpen(false)}>
            <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-md-surface dark:bg-zinc-900 p-8 pt-safe animate-in slide-in-from-right duration-400 rounded-l-[32px] shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-10 py-4">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 bg-md-primary rounded-xl flex items-center justify-center text-white"><Settings size={20}/></div>
-                   <h3 className="font-black text-xl">Settings</h3>
-                </div>
-                <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-md-surface-container rounded-full transition-colors"><XIcon size={24}/></button>
+                <h3 className="font-black text-xl">Settings</h3>
+                <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-md-surface-container rounded-full"><XIcon size={24}/></button>
               </div>
               <div className="space-y-3">
                  <MenuBtn onClick={() => { setActiveTab('sync-setup'); setIsMenuOpen(false); }} icon={FileSpreadsheet} label="Cloud Sync Setup" />
                  <MenuBtn onClick={() => { setActiveTab('wallet-manager'); setIsMenuOpen(false); }} icon={CreditCard} label="Manage Wallets" />
                  <MenuBtn onClick={() => { setActiveTab('lending'); setIsMenuOpen(false); }} icon={HandCoins} label="Debt & Lending" />
-                 
-                 <div className="mt-8 pt-8 border-t dark:border-zinc-800">
-                    <div className={`p-4 rounded-2xl flex items-center gap-4 ${isOnline ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700'}`}>
-                       {isOnline ? <Wifi size={20} /> : <WifiOff size={20} />}
-                       <div>
-                          <p className="text-xs font-black uppercase tracking-widest">{isOnline ? 'Internet Connected' : 'Offline Mode Active'}</p>
-                          <p className="text-[10px] opacity-70 leading-tight mt-0.5">{isOnline ? 'Data will sync automatically with cloud.' : 'All changes saved locally, sync on connect.'}</p>
-                       </div>
-                    </div>
-                 </div>
               </div>
            </div>
         </div>
@@ -690,7 +583,7 @@ const App: React.FC = () => {
 
 const MenuBtn = ({ onClick, icon: Icon, label }: any) => (
   <button onClick={onClick} className="w-full flex items-center gap-5 py-5 px-6 rounded-2xl hover:bg-md-surface-container-high text-sm font-bold transition-all active:scale-95 group">
-     <div className="p-2.5 bg-md-primary/10 rounded-xl text-md-primary group-hover:scale-110 transition-transform"><Icon size={20} /></div>
+     <div className="p-2.5 bg-md-primary/10 rounded-xl text-md-primary"><Icon size={20} /></div>
      {label}
   </button>
 );
