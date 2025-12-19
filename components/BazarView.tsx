@@ -467,7 +467,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
                                 <ShoppingCart size={18} className="text-md-primary" />
-                                <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant uppercase">Entry Form</h4>
+                                <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant uppercase tracking-widest">Entry Form</h4>
                             </div>
                             <button type="button" onClick={refreshTime} className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm text-md-primary active:rotate-180 transition-transform">
                                 <Clock size={16} />
@@ -491,13 +491,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                 type="number" 
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
-                                onKeyDown={(e) => {
-                                  // Android "Next/Arrow" key often translates to Enter (13) or Tab (9) depending on context
-                                  // Using KeyDown to catch it early.
-                                  if (e.key === 'Enter') {
-                                    handleQuickAdd();
-                                  }
-                                }}
+                                enterKeyHint="done"
                                 placeholder="Price"
                                 className="w-24 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black text-rose-600 shadow-inner dark:text-rose-400"
                                 required
