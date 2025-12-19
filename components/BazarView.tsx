@@ -52,7 +52,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     const [dateTime, setDateTime] = useState(getLocalDateTime());
     const [viewDate, setViewDate] = useState(new Date());
 
-    // UI States
+    // UI States for folding sections
     const [isPickListExpanded, setIsPickListExpanded] = useState(true);
     const [isToBuyExpanded, setIsToBuyExpanded] = useState(true);
 
@@ -111,10 +111,14 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     const handleQuickAdd = (e?: React.FormEvent) => {
       if (e) e.preventDefault();
-      if(!item) return;
+      
+      // Mandatory field check
+      if(!item || !amount || parseFloat(amount) <= 0) {
+        return;
+      }
       
       const finalDate = dateTime ? new Date(dateTime).toISOString() : new Date().toISOString();
-      const finalAmount = amount === '' ? 0 : parseFloat(amount);
+      const finalAmount = parseFloat(amount);
 
       onAddTransaction({
         description: item,
@@ -135,29 +139,29 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
       
       setItem('');
       setAmount('');
+      
+      // Return focus to item input for next entry
       if (itemInputRef.current) {
           itemInputRef.current.focus();
       }
     };
 
     const handlePickListClick = (name: string) => {
-        // Add to "To Buy" list instead of form directly
         if (!toBuyList.includes(name)) {
             setToBuyList([...toBuyList, name]);
-            // Automatically expand to-buy if it's closed
-            setIsToBuyExpanded(true);
+            setIsToBuyExpanded(true); // Auto-expand when adding to shopping list
         }
     };
 
     const handleToBuyItemClick = (name: string, index: number) => {
-        // Populates the form
         setItem(name);
         setProcessingIndex(index);
+        // Delay focus slightly to ensure the keyboard pops up correctly on mobile
         setTimeout(() => {
           if (priceInputRef.current) {
             priceInputRef.current.focus();
           }
-        }, 50);
+        }, 100);
     };
 
     const removeFromToBuy = (index: number) => {
@@ -463,7 +467,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
                                 <ShoppingCart size={18} className="text-md-primary" />
-                                <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant">Entry Form</h4>
+                                <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant uppercase">Entry Form</h4>
                             </div>
                             <button type="button" onClick={refreshTime} className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm text-md-primary active:rotate-180 transition-transform">
                                 <Clock size={16} />
@@ -488,12 +492,15 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 onKeyDown={(e) => {
+                                  // Android "Next/Arrow" key often translates to Enter (13) or Tab (9) depending on context
+                                  // Using KeyDown to catch it early.
                                   if (e.key === 'Enter') {
                                     handleQuickAdd();
                                   }
                                 }}
                                 placeholder="Price"
                                 className="w-24 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black text-rose-600 shadow-inner dark:text-rose-400"
+                                required
                             />
                         </div>
                         <div className="flex items-center gap-3">
@@ -516,7 +523,11 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                     />
                                 </div>
                         </div>
-                        <button type="submit" className="w-full bg-md-primary text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-3">
+                        <button 
+                            type="submit" 
+                            disabled={!item || !amount || parseFloat(amount) <= 0}
+                            className="w-full bg-md-primary text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
                             <Plus size={18} strokeWidth={3} />
                             {processingIndex !== null ? 'Add & Remove from List' : 'Add'}
                         </button>
