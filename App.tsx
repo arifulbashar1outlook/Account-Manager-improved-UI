@@ -347,23 +347,7 @@ const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // TRIGGER AUTO PUSH - Updated to include Bazar Data
-  const triggerAutoPush = useCallback(async (overrides?: { txs?: Transaction[], accs?: Account[], tmpl?: string[], buy?: string[] }) => {
-    if (!navigator.onLine) {
-        setSyncStatus('pending');
-        return;
-    }
-    setSyncStatus('syncing');
-    const success = await pushToSheets(
-      overrides?.txs || transactions, 
-      overrides?.accs || accounts,
-      overrides?.tmpl || bazarTemplates,
-      overrides?.buy || toBuyList
-    );
-    setSyncStatus(success ? 'synced' : 'error');
-  }, [transactions, accounts, bazarTemplates, toBuyList]);
-
-  // SYNC PULL - Updated to fetch Bazar Data
+  // SYNC PULL - Fetches everything from Cloud
   const handleSyncPull = useCallback(async (silent = false) => {
     if (!navigator.onLine) {
         setSyncStatus('none');
@@ -373,7 +357,7 @@ const App: React.FC = () => {
     
     const cloudData = await pullFromSheets();
     if (cloudData) {
-      // 1. Merge Transactions
+      // 1. Merge Transactions (IDs preserve uniqueness)
       setTransactions(prev => {
         const merged = mergeFinancialData(prev, cloudData.transactions);
         saveStoredTransactions(merged);
@@ -390,7 +374,7 @@ const App: React.FC = () => {
         return mergedAccs;
       });
 
-      // 3. Set Bazar State
+      // 3. Set Bazar State from Cloud
       setBazarTemplates(cloudData.templates);
       setToBuyList(cloudData.toBuyList);
 
@@ -400,6 +384,50 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // TRIGGER PUSH - Uploads current local state
+  const triggerAutoPush = useCallback(async (overrides?: { txs?: Transaction[], accs?: Account[], tmpl?: string[], buy?: string[] }) => {
+    if (!navigator.onLine) {
+        setSyncStatus('pending');
+        return;
+    }
+    setSyncStatus('syncing');
+    
+    // Ensure data is sorted by date before pushing to Sheet for chronological order
+    const txsToPush = overrides?.txs || transactions;
+    const sortedTxs = [...txsToPush].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const success = await pushToSheets(
+      sortedTxs, 
+      overrides?.accs || accounts,
+      overrides?.tmpl || bazarTemplates,
+      overrides?.buy || toBuyList
+    );
+    
+    if (success) {
+      setSyncStatus('synced');
+      // After a successful push, immediately pull to sync with other devices' recent changes
+      await handleSyncPull(true);
+    } else {
+      setSyncStatus('error');
+    }
+  }, [transactions, accounts, bazarTemplates, toBuyList, handleSyncPull]);
+
+  // INITIAL BOOT SYNC - CLOUD FIRST
+  useEffect(() => {
+    const config = getSyncConfig();
+    if (config && config.url && navigator.onLine) {
+      // Force an immediate pull on startup before doing anything else
+      handleSyncPull().then(() => {
+        // Also do a background poll
+        const pollInterval = setInterval(() => {
+          if (navigator.onLine) handleSyncPull(true);
+        }, 15000); // 15s Background Refresh for other devices
+        return () => clearInterval(pollInterval);
+      });
+    }
+  }, [handleSyncPull]);
+
+  // Handle Online/Offline lifecycle
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); handleSyncPull(true).then(() => triggerAutoPush()); };
     const handleOffline = () => setIsOnline(false);
@@ -408,17 +436,7 @@ const App: React.FC = () => {
     return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
   }, [handleSyncPull, triggerAutoPush]);
 
-  useEffect(() => {
-    const config = getSyncConfig();
-    if (config && config.url && navigator.onLine) {
-      handleSyncPull();
-      const pollInterval = setInterval(() => {
-        if (navigator.onLine) handleSyncPull(true);
-      }, 10000); // 10s Background Refresh
-      return () => clearInterval(pollInterval);
-    }
-  }, [handleSyncPull]);
-
+  // DATA HANDLERS: LOCAL -> PUSH -> PULL cycle
   const handleAddTransaction = (t: Omit<Transaction, 'id'>) => {
     const newTx = {...t, id: uuidv4()};
     const updated = [newTx, ...transactions];
