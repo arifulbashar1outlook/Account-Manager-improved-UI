@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, ArrowDownCircle, Wallet, ArrowRight, CalendarDays, Tag } from 'lucide-react';
 import { Transaction, AccountType, Category, Account } from '../types';
 
@@ -11,24 +11,33 @@ interface SalaryManagerProps {
 const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, accounts }) => {
   const [activeTab, setActiveTab] = useState<'salary' | 'received'>('salary');
   
+  // Shared Date State
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
   // Salary State
   const [salaryAmount, setSalaryAmount] = useState<string>('');
-  
-  // Default salary to the 'salary' id if present, else first account
-  const defaultSalaryAcc = accounts.find(a => a.id === 'salary')?.id || accounts[0]?.id;
-  const [salaryTarget, setSalaryTarget] = useState<string>(defaultSalaryAcc || '');
+  const [salaryTarget, setSalaryTarget] = useState<string>('');
 
   // Received Money State
   const [receivedAmount, setReceivedAmount] = useState('');
   const [receivedDesc, setReceivedDesc] = useState('');
   const [receivedCategory, setReceivedCategory] = useState<string>(Category.OTHER);
-  const [receivedDestination, setReceivedDestination] = useState<AccountType>(accounts.find(a => a.id === 'cash')?.id || accounts[0]?.id);
+  const [receivedDestination, setReceivedDestination] = useState<AccountType>('');
 
-  // Shared Date State
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  // Ensure accounts are loaded and selection is initialized
+  useEffect(() => {
+    if (accounts.length > 0) {
+      if (!salaryTarget) {
+        setSalaryTarget(accounts.find(a => a.id === 'salary')?.id || accounts[0]?.id || '');
+      }
+      if (!receivedDestination) {
+        setReceivedDestination(accounts.find(a => a.id === 'cash')?.id || accounts[0]?.id || '');
+      }
+    }
+  }, [accounts, salaryTarget, receivedDestination]);
 
   const handleAddSalary = () => {
-    if (!salaryAmount) return;
+    if (!salaryAmount || !salaryTarget) return;
 
     const accName = accounts.find(a => a.id === salaryTarget)?.name || 'Salary Account';
 
@@ -43,21 +52,21 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
       type: 'income',
       category: Category.SALARY,
       description: 'Monthly Salary',
-      date: date,
+      date: new Date(date).toISOString(), // Ensure ISO string format
       accountId: salaryTarget 
     });
 
-    setSalaryAmount(''); // Clear input after adding
+    setSalaryAmount('');
   };
 
   const handleAddReceivedMoney = () => {
-    if (!receivedAmount) return;
+    if (!receivedAmount || !receivedDestination) return;
     onAddTransaction({
       amount: parseFloat(receivedAmount),
       type: 'income',
       category: receivedCategory,
       description: receivedDesc || 'Received Money',
-      date: date,
+      date: new Date(date).toISOString(), // Ensure ISO string format
       accountId: receivedDestination
     });
     setReceivedAmount('');
@@ -118,7 +127,7 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
                   </div>
                   <button
                     onClick={handleAddSalary}
-                    disabled={!salaryAmount}
+                    disabled={!salaryAmount || !salaryTarget}
                     className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2 sm:w-auto w-full shadow-lg"
                   >
                     <Plus className="w-5 h-5" />
@@ -126,7 +135,7 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
                   </button>
                </div>
                <div className="mt-4 flex items-center gap-3">
-                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Target:</label>
+                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Target Wallet:</label>
                    <select 
                      value={salaryTarget}
                      onChange={(e) => setSalaryTarget(e.target.value)}
@@ -212,7 +221,7 @@ const SalaryManager: React.FC<SalaryManagerProps> = ({ onAddTransaction, account
 
              <button
               onClick={handleAddReceivedMoney}
-              disabled={!receivedAmount}
+              disabled={!receivedAmount || !receivedDestination}
               className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-4 rounded-xl hover:bg-emerald-700 transition-all font-black text-xs uppercase tracking-[0.2em] disabled:opacity-50 active:scale-[0.98] shadow-lg mt-2"
             >
               <Wallet className="w-5 h-5" />

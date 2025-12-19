@@ -36,6 +36,17 @@ export const pushToSheets = async (
   const config = getSyncConfig();
   if (!config || !config.url) return false;
 
+  // Enrich transactions with human-readable names for the spreadsheet
+  const enrichedTransactions = transactions.map(t => {
+    const acc = accounts.find(a => a.id === t.accountId);
+    const targetAcc = t.targetAccountId ? accounts.find(a => a.id === t.targetAccountId) : null;
+    return {
+      ...t,
+      accountName: acc ? acc.name : 'Unknown Wallet',
+      targetAccountName: targetAcc ? targetAcc.name : ''
+    };
+  });
+
   try {
     const response = await fetch(config.url, {
       method: 'POST',
@@ -44,7 +55,7 @@ export const pushToSheets = async (
       },
       body: JSON.stringify({
         action: 'push',
-        transactions,
+        transactions: enrichedTransactions,
         accounts,
         templates,
         toBuyList
@@ -93,7 +104,7 @@ export const pullFromSheets = async (): Promise<{
 
 export const GOOGLE_APPS_SCRIPT_CODE = `
 /**
- * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC (v4 - Master Source Sync)
+ * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC (v5 - Dual Column Logic)
  */
 function doGet(e) {
   var action = e.parameter.action;
@@ -109,7 +120,17 @@ function doGet(e) {
       var data = txSheet.getDataRange().getValues();
       data.shift(); // Remove headers
       transactions = data.map(function(row) {
-        return {id: row[0], date: row[1], amount: Number(row[2]), type: row[3], category: row[4], description: row[5], accountId: row[6], targetAccountId: row[7] || undefined};
+        // App only needs columns 0-7. Columns 8-9 (Names) are for human reading only.
+        return {
+          id: row[0], 
+          date: row[1], 
+          amount: Number(row[2]), 
+          type: row[3], 
+          category: row[4], 
+          description: row[5], 
+          accountId: row[6], 
+          targetAccountId: row[7] || undefined
+        };
       });
     }
 
@@ -149,15 +170,30 @@ function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
   if (payload.action === 'push') {
-    // 1. Transactions - Replaced entirely to match local state
+    // 1. Transactions - Enriched with Names for visibility
     var txSheet = ss.getSheetByName("Transactions") || ss.insertSheet("Transactions");
     txSheet.clear();
-    txSheet.appendRow(["ID", "Date", "Amount", "Type", "Category", "Description", "AccountId", "TargetAccountId"]);
+    txSheet.appendRow(["ID", "Date", "Amount", "Type", "Category", "Description", "AccountId", "TargetAccountId", "AccountName", "TargetAccountName"]);
     if (payload.transactions && payload.transactions.length > 0) {
       var rows = payload.transactions.map(function(t) {
-        return [t.id, t.date, t.amount, t.type, t.category, t.description, t.accountId, t.targetAccountId || ""];
+        return [
+          t.id, 
+          t.date, 
+          t.amount, 
+          t.type, 
+          t.category, 
+          t.description, 
+          t.accountId, 
+          t.targetAccountId || "",
+          t.accountName || "",
+          t.targetAccountName || ""
+        ];
       });
-      txSheet.getRange(2, 1, rows.length, 8).setValues(rows);
+      txSheet.getRange(2, 1, rows.length, 10).setValues(rows);
+      
+      // Formatting for readability
+      txSheet.getRange(1, 1, 1, 10).setFontWeight("bold").setBackground("#f3f4f6");
+      txSheet.setFrozenRows(1);
     }
 
     // 2. Accounts
@@ -167,6 +203,7 @@ function doPost(e) {
     if (payload.accounts && payload.accounts.length > 0) {
       var rows = payload.accounts.map(function(a) { return [a.id, a.name, a.color]; });
       accSheet.getRange(2, 1, rows.length, 3).setValues(rows);
+      accSheet.getRange(1, 1, 1, 3).setFontWeight("bold").setBackground("#f3f4f6");
     }
 
     // 3. Bazar Templates

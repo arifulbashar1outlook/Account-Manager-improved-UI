@@ -14,11 +14,16 @@ import {
   CloudUpload,
   Activity,
   Wallet as WalletIcon,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Target,
+  Sparkles,
+  Zap,
+  ArrowRight,
+  PieChart
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Transaction, Account } from './types';
+import { Transaction, Account, Category } from './types';
 import { 
   getStoredTransactions, saveStoredTransactions, 
   getStoredAccounts, saveStoredAccounts,
@@ -41,7 +46,6 @@ const useKeyboardVisibility = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const handleResize = () => {
-      // Improved logic for mobile keyboards: check visual viewport against window innerHeight
       const viewport = window.visualViewport;
       if (viewport) {
         setKeyboardVisible(viewport.height < window.innerHeight * 0.85);
@@ -156,6 +160,8 @@ const App: React.FC = () => {
     const d = new Date();
     const currentMonth = d.getMonth();
     const currentYear = d.getFullYear();
+    const currentDay = d.getDate();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     
     const filteredMonth = transactions.filter(t => {
       const td = new Date(t.date);
@@ -165,10 +171,21 @@ const App: React.FC = () => {
     const inc = filteredMonth.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const exp = filteredMonth.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     
-    const currentDay = d.getDate();
     const dailyAvg = exp / currentDay;
+    const projectedExp = dailyAvg * daysInMonth;
+    
+    const healthScore = Math.min(100, Math.max(0, inc > 0 ? ((inc - exp) / inc) * 100 : 0));
 
-    return { inc, exp, bal: inc - exp, dailyAvg };
+    // Top categories for dashboard insight
+    const catTotals: Record<string, number> = {};
+    filteredMonth.filter(t => t.type === 'expense').forEach(t => {
+       catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+    });
+    const topCategories = Object.entries(catTotals)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    return { inc, exp, bal: inc - exp, dailyAvg, projectedExp, healthScore, topCategories };
   }, [transactions]);
 
   const accountBalances = useMemo(() => {
@@ -209,25 +226,31 @@ const App: React.FC = () => {
 
       <main className="max-w-md mx-auto">
         {activeTab === 'dashboard' && (
-          <div className="p-6 space-y-8 animate-in fade-in duration-500">
-            <div className="bg-md-primary-container p-8 rounded-[32px] shadow-sm border border-md-primary/10 relative overflow-hidden">
+          <div className="p-6 space-y-6 animate-in fade-in duration-500">
+            {/* Primary Balance Card */}
+            <div className="bg-md-primary-container p-8 rounded-[36px] shadow-sm border border-md-primary/10 relative overflow-hidden group">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-md-primary/5 rounded-full blur-3xl group-hover:scale-110 transition-transform"></div>
                 <div className="relative z-10">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-2">Monthly Available</p>
-                  <h2 className="text-4xl font-[800] text-md-on-primary-container tracking-tighter">Tk {summary.bal.toLocaleString()}</h2>
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60">Monthly Balance</p>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/40 rounded-full">
+                      <Zap size={10} className="text-md-primary" />
+                      <span className="text-[8px] font-black uppercase tracking-tighter text-md-primary">Health: {summary.healthScore.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                  <h2 className="text-5xl font-[900] text-md-on-primary-container tracking-tighter mb-6">Tk {summary.bal.toLocaleString()}</h2>
                   
-                  <div className="mt-6 pt-5 border-t border-md-on-primary-container/10 flex items-center justify-between">
+                  <div className="pt-5 border-t border-md-on-primary-container/10 flex items-center justify-between">
                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white/40 rounded-xl"><Activity size={16} className="text-md-on-primary-container" /></div>
+                        <div className="p-2.5 bg-white/60 rounded-2xl shadow-sm"><Activity size={18} className="text-md-primary" /></div>
                         <div>
-                          <p className="text-[8px] font-black uppercase tracking-widest text-md-on-primary-container/40 leading-none mb-1">Daily Spend Avg</p>
-                          <p className="text-sm font-black text-md-on-primary-container">Tk {summary.dailyAvg.toFixed(0)}</p>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-md-on-primary-container/40 leading-none mb-1">Daily Burn</p>
+                          <p className="text-base font-black text-md-on-primary-container">Tk {summary.dailyAvg.toFixed(0)}</p>
                         </div>
                      </div>
                      <div className="text-right">
-                       <p className="text-[8px] font-black uppercase tracking-widest text-md-on-primary-container/40 leading-none mb-1">Status</p>
-                       <p className={`text-sm font-black ${summary.bal > 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                         {summary.bal > 0 ? 'Safe' : 'Overspent'}
-                       </p>
+                       <p className="text-[8px] font-black uppercase tracking-widest text-md-on-primary-container/40 leading-none mb-1">Projected Total</p>
+                       <p className="text-base font-black text-rose-700">Tk {summary.projectedExp.toFixed(0)}</p>
                      </div>
                   </div>
                 </div>
@@ -236,6 +259,56 @@ const App: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
                <SummaryCard title="Inflow" amount={summary.inc} icon={TrendingUp} colorClass="text-emerald-700" bgClass="bg-emerald-100" />
                <SummaryCard title="Outflow" amount={summary.exp} icon={TrendingDown} colorClass="text-rose-700" bgClass="bg-rose-100" />
+            </div>
+
+            {/* Quick Stats/Trends Improvement */}
+            {summary.topCategories.length > 0 && (
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-[32px] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-4">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                       <PieChart size={16} className="text-md-primary" />
+                       <h3 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Spending Trends</h3>
+                    </div>
+                    <button onClick={() => setActiveTab('full-report')} className="text-[9px] font-black uppercase tracking-widest text-md-primary flex items-center gap-1 group">
+                       Details <ArrowRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                 </div>
+                 <div className="space-y-3">
+                    {summary.topCategories.map(([cat, val]) => (
+                       <div key={cat} className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-md-on-surface/70 truncate flex-1">{cat}</p>
+                          <div className="flex items-center gap-3 flex-1 px-4">
+                             <div className="h-1.5 flex-1 bg-gray-50 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-md-primary/40 rounded-full" style={{ width: `${(val / summary.exp) * 100}%` }}></div>
+                             </div>
+                          </div>
+                          <p className="text-[10px] font-black text-md-on-surface">Tk {val.toLocaleString()}</p>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+            )}
+
+            {/* Health Score Gauge */}
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-[32px] border border-gray-100 dark:border-zinc-800 shadow-sm">
+               <div className="flex items-center justify-between mb-4 px-1">
+                 <div className="flex items-center gap-2">
+                   <Target size={16} className="text-md-primary" />
+                   <h3 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Savings Performance</h3>
+                 </div>
+                 <span className={`text-[10px] font-black ${summary.healthScore > 30 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {summary.healthScore > 50 ? 'Excellent' : summary.healthScore > 20 ? 'Good' : 'Critical'}
+                 </span>
+               </div>
+               <div className="h-2 w-full bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-1000 ${
+                      summary.healthScore > 50 ? 'bg-emerald-500' : 
+                      summary.healthScore > 20 ? 'bg-amber-500' : 'bg-rose-500'
+                    }`}
+                    style={{ width: `${summary.healthScore}%` }}
+                  ></div>
+               </div>
             </div>
 
             <div className="space-y-4">
@@ -248,12 +321,12 @@ const App: React.FC = () => {
                </div>
                <div className="grid gap-3">
                  {accounts.map(acc => (
-                   <div key={acc.id} className="bg-white dark:bg-zinc-900 p-6 rounded-[28px] border border-gray-100 dark:border-zinc-800 flex justify-between items-center shadow-sm active:bg-gray-50 transition-colors">
+                   <div key={acc.id} className="bg-white dark:bg-zinc-900 p-6 rounded-[28px] border border-gray-100 dark:border-zinc-800 flex justify-between items-center shadow-sm active:bg-gray-50 transition-all hover:translate-x-1">
                       <div className="flex items-center gap-4">
                         <div className="w-1.5 h-9 rounded-full" style={{ backgroundColor: acc.color }}></div>
                         <p className="font-[800] text-lg tracking-tight" style={{ color: acc.color }}>{acc.name}</p>
                       </div>
-                      <p className="font-black text-sm text-md-on-surface">Tk {accountBalances[acc.id]?.toLocaleString()}</p>
+                      <p className="font-black text-sm text-md-on-surface dark:text-gray-100">Tk {accountBalances[acc.id]?.toLocaleString()}</p>
                    </div>
                  ))}
                </div>
@@ -267,7 +340,7 @@ const App: React.FC = () => {
                 <PlusCircle className="text-md-primary" size={24} />
                 <h2 className="text-3xl font-[800] tracking-tight text-md-on-surface">New Entry</h2>
              </div>
-             <SalaryManager onAddTransaction={handleAddTransaction} accounts={accounts} />
+             <SalaryManager onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
              <TransactionForm onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
           </div>
         )}
@@ -280,7 +353,7 @@ const App: React.FC = () => {
         {activeTab === 'sync-setup' && <SyncView onBack={() => setActiveTab('dashboard')} onPullData={handleSyncPull} />}
       </main>
 
-      {!isKeyboardVisible && (activeTab === 'dashboard' || activeTab === 'bazar') && (
+      {!isKeyboardVisible && activeTab === 'dashboard' && (
         <button onClick={() => setActiveTab('input')} className="fixed bottom-[100px] right-6 w-16 h-16 bg-md-primary text-white rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40">
           <Plus size={32} strokeWidth={3} />
         </button>

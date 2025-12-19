@@ -7,8 +7,8 @@ const BAZAR_TEMPLATES_KEY = 'smartspend_bazar_templates_v2';
 const TO_BUY_LIST_KEY = 'smartspend_to_buy_list_v2';
 
 export const DEFAULT_ACCOUNTS: Account[] = [
-  { id: 'salary', name: 'Salary Account', color: '#6366f1', isDefault: true },
-  { id: 'savings', name: 'Savings Account', color: '#10b981', isDefault: true },
+  { id: 'salary', name: 'EBL', color: '#6366f1', isDefault: true },
+  { id: 'savings', name: 'Islami Bank', color: '#10b981', isDefault: true },
   { id: 'cash', name: 'Cash Wallet', color: '#f59e0b', isDefault: true }
 ];
 

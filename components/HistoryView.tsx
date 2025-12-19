@@ -16,7 +16,8 @@ import {
   Search,
   Filter,
   ArrowDown,
-  Clock
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 import { Transaction, AccountType, Category, TransactionType, Account } from '../types';
 
@@ -39,6 +40,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
     const [editAmount, setEditAmount] = useState('');
     const [editDate, setEditDate] = useState('');
     const [editAccount, setEditAccount] = useState<AccountType>(accounts[0]?.id || '');
+    const [editTargetAccount, setEditTargetAccount] = useState<AccountType>('');
     const [editCategory, setEditCategory] = useState<string>('');
     const [editType, setEditType] = useState<TransactionType>('expense');
 
@@ -87,6 +89,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
             setEditDate(new Date().toISOString().slice(0, 16));
         }
         setEditAccount(t.accountId);
+        setEditTargetAccount(t.targetAccountId || (accounts.find(a => a.id !== t.accountId)?.id || ''));
         setEditCategory(t.category);
         setEditType(t.type);
     };
@@ -100,7 +103,8 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
             amount: parseFloat(editAmount),
             date: new Date(editDate).toISOString(),
             accountId: editAccount,
-            category: editCategory,
+            targetAccountId: editType === 'transfer' ? editTargetAccount : undefined,
+            category: editType === 'transfer' ? Category.TRANSFER : editCategory,
             type: editType
         };
 
@@ -168,7 +172,13 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                                 <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Type</label>
                                 <select
                                     value={editType}
-                                    onChange={(e) => setEditType(e.target.value as TransactionType)}
+                                    onChange={(e) => {
+                                        const newType = e.target.value as TransactionType;
+                                        setEditType(newType);
+                                        if (newType === 'transfer' && !editTargetAccount) {
+                                            setEditTargetAccount(accounts.find(a => a.id !== editAccount)?.id || '');
+                                        }
+                                    }}
                                     className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none font-bold appearance-none dark:bg-zinc-800 dark:text-white"
                                 >
                                     <option value="expense">Expense</option>
@@ -177,12 +187,20 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                                 </select>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+
+                        {editType === 'transfer' ? (
+                          <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
-                                <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Wallet</label>
+                                <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">From Account</label>
                                 <select
                                     value={editAccount}
-                                    onChange={(e) => setEditAccount(e.target.value as AccountType)}
+                                    onChange={(e) => {
+                                        const val = e.target.value as AccountType;
+                                        setEditAccount(val);
+                                        if (val === editTargetAccount) {
+                                            setEditTargetAccount(accounts.find(a => a.id !== val)?.id || '');
+                                        }
+                                    }}
                                     className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none font-bold appearance-none dark:bg-zinc-800 dark:text-white"
                                 >
                                     {accounts.map(a => (
@@ -191,18 +209,46 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                                 </select>
                             </div>
                             <div className="relative">
-                                <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Category</label>
+                                <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">To Account</label>
                                 <select
-                                    value={editCategory}
-                                    onChange={(e) => setEditCategory(e.target.value)}
+                                    value={editTargetAccount}
+                                    onChange={(e) => setEditTargetAccount(e.target.value as AccountType)}
                                     className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none font-bold appearance-none dark:bg-zinc-800 dark:text-white"
                                 >
-                                    {Object.values(Category).map((cat) => (
-                                        <option key={cat} value={cat}>{cat}</option>
+                                    {accounts.filter(a => a.id !== editAccount).map(a => (
+                                        <option key={a.id} value={a.id}>{a.name}</option>
                                     ))}
                                 </select>
                             </div>
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-4">
+                              <div className="relative">
+                                  <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Wallet</label>
+                                  <select
+                                      value={editAccount}
+                                      onChange={(e) => setEditAccount(e.target.value as AccountType)}
+                                      className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none font-bold appearance-none dark:bg-zinc-800 dark:text-white"
+                                  >
+                                      {accounts.map(a => (
+                                          <option key={a.id} value={a.id}>{a.name}</option>
+                                      ))}
+                                  </select>
+                              </div>
+                              <div className="relative">
+                                  <label className="text-[10px] font-black uppercase text-md-primary ml-1 mb-1 block">Category</label>
+                                  <select
+                                      value={editCategory}
+                                      onChange={(e) => setEditCategory(e.target.value)}
+                                      className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none font-bold appearance-none dark:bg-zinc-800 dark:text-white"
+                                  >
+                                      {Object.values(Category).map((cat) => (
+                                          <option key={cat} value={cat}>{cat}</option>
+                                      ))}
+                                  </select>
+                              </div>
+                          </div>
+                        )}
                     </div>
                     <div className="flex justify-between items-center pt-4 border-t dark:border-zinc-800">
                         <button 
@@ -337,6 +383,8 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                             <div className="bg-white dark:bg-zinc-900 rounded-[28px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm">
                                 {dayTransactions.map((t, idx) => {
                                     const acc = getAccountInfo(t.accountId);
+                                    const targetAcc = t.targetAccountId ? getAccountInfo(t.targetAccountId) : null;
+                                    
                                     return (
                                         <div 
                                             key={t.id} 
@@ -358,7 +406,16 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                                                     <div className="flex items-center gap-1.5 mt-0.5">
                                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.category}</p>
                                                         <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
+                                                        
+                                                        {t.type === 'transfer' && targetAcc ? (
+                                                          <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
+                                                            <span style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</span>
+                                                            <ArrowRight size={8} className="text-gray-400" />
+                                                            <span style={{ color: targetAcc?.color || '#999' }}>{targetAcc?.name}</span>
+                                                          </div>
+                                                        ) : (
+                                                          <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

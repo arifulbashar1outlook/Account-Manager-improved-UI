@@ -9,14 +9,18 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Receipt, 
-  ChevronDown,
+  ChevronDown, 
   ChevronUp,
   Settings2,
   ListOrdered,
   ListPlus,
-  ShoppingBag
+  ShoppingBag,
+  Camera,
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
+import { analyzeReceipt } from '../services/geminiService';
 
 interface BazarViewProps {
   transactions: Transaction[];
@@ -58,6 +62,7 @@ const BazarView: React.FC<BazarViewProps> = ({
 
     const [isPickListExpanded, setIsPickListExpanded] = useState(false);
     const [isToBuyExpanded, setIsToBuyExpanded] = useState(true);
+    const [isScanning, setIsScanning] = useState(false);
 
     const [processingIndex, setProcessingIndex] = useState<number | null>(null);
     const [newTemplate, setNewTemplate] = useState('');
@@ -71,11 +76,60 @@ const BazarView: React.FC<BazarViewProps> = ({
 
     const itemInputRef = useRef<HTMLInputElement>(null);
     const priceInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const changeMonth = (offset: number) => {
         const newDate = new Date(viewDate);
         newDate.setMonth(newDate.getMonth() + offset);
         setViewDate(newDate);
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsScanning(true);
+        try {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64 = (reader.result as string).split(',')[1];
+                const items = await analyzeReceipt(base64, file.type);
+                
+                if (items && items.length > 0) {
+                    // Strategy: Add items with prices directly to transactions, 
+                    // and items without prices to the "To Buy" list.
+                    const newTxs: Omit<Transaction, 'id'>[] = [];
+                    const newToBuy: string[] = [...toBuyList];
+
+                    items.forEach(it => {
+                        if (it.price > 0) {
+                            onAddTransaction({
+                                description: it.name,
+                                amount: it.price,
+                                type: 'expense',
+                                category: Category.BAZAR,
+                                date: new Date().toISOString(),
+                                accountId: paidFrom
+                            });
+                        } else {
+                            if (!newToBuy.includes(it.name)) {
+                                newToBuy.push(it.name);
+                            }
+                        }
+                    });
+                    setToBuyList(newToBuy);
+                    alert(`AI processed ${items.length} items from receipt.`);
+                } else {
+                    alert("Gemini couldn't find any items. Try a clearer photo.");
+                }
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            alert("Error scanning receipt. Please check connection.");
+        } finally {
+            setIsScanning(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     };
 
     const currentMonth = viewDate.getMonth();
@@ -217,9 +271,28 @@ const BazarView: React.FC<BazarViewProps> = ({
          <div className="px-4 mt-4 space-y-3">
             {isCurrentCalendarMonth && (
                 <>
-                    {/* Compact Entry Form - Equalized row using grid for stability */}
+                    <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                    
+                    {isScanning && (
+                      <div className="bg-md-primary p-4 rounded-[24px] text-white flex items-center gap-4 shadow-lg animate-pulse">
+                        <Loader2 className="animate-spin" size={20} />
+                        <div className="flex-1">
+                          <p className="text-xs font-black uppercase tracking-widest">AI Scanning Receipt</p>
+                          <p className="text-[10px] opacity-70">Extracting items and prices...</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Compact Entry Form */}
                     <form onSubmit={handleQuickAdd} className="bg-white dark:bg-zinc-900 p-2 rounded-[20px] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-2">
-                        <div className="grid grid-cols-[1fr_1fr_42px] gap-2 items-center">
+                        <div className="grid grid-cols-[42px_1fr_80px_42px] gap-2 items-center">
+                            <button 
+                              type="button" 
+                              onClick={() => fileInputRef.current?.click()}
+                              className="bg-md-surface-container dark:bg-zinc-800 text-md-primary rounded-xl h-10 w-full flex items-center justify-center active:scale-90 transition-all border border-md-primary/10"
+                            >
+                                <Camera size={20} />
+                            </button>
                             <input ref={itemInputRef} type="text" value={item} onChange={e => { setItem(e.target.value); if (processingIndex !== null) setProcessingIndex(null); }} placeholder="Item name" className="px-3 py-2 bg-md-surface-container dark:bg-zinc-800 rounded-xl font-bold text-xs outline-none h-10 w-full" required />
                             <input ref={priceInputRef} type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Tk" className="px-2 py-2 bg-md-surface-container dark:bg-zinc-800 rounded-xl font-[800] text-xs text-rose-600 outline-none h-10 w-full text-center" required />
                             <button type="submit" className="bg-md-primary text-white rounded-xl shadow-md active:scale-95 transition-all h-10 w-full flex items-center justify-center">
@@ -234,7 +307,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                         </div>
                     </form>
 
-                    {/* Shopping List - Organized Vertically with better readability */}
+                    {/* Shopping List */}
                     <div className="bg-white dark:bg-zinc-900 rounded-[20px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden">
                         <div className="flex items-center justify-between px-4 py-2 cursor-pointer" onClick={() => setIsToBuyExpanded(!isToBuyExpanded)}>
                             <div className="flex items-center gap-2">
@@ -302,7 +375,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                 )}
                                 <div className="flex flex-wrap gap-1.5">
                                     {templates.map(itemName => (
-                                        <button key={itemName} type="button" onClick={() => handlePickListClick(itemName)} className={`px-4 py-2.5 border rounded-xl text-[14px] font-black uppercase tracking-tight transition-all active:scale-95 ${toBuyList.includes(itemName) ? 'bg-md-primary/10 text-md-primary border-md-primary/30' : 'bg-white dark:bg-zinc-900 text-md-on-surface'}`}>
+                                        <button key={itemName} type="button" onClick={() => handlePickListClick(itemName)} className={`px-4 py-2.5 border rounded-xl text-[12px] font-black uppercase tracking-tight transition-all active:scale-95 ${toBuyList.includes(itemName) ? 'bg-md-primary/10 text-md-primary border-md-primary/30' : 'bg-white dark:bg-zinc-900 text-md-on-surface'}`}>
                                             {itemName}
                                         </button>
                                     ))}
@@ -315,9 +388,16 @@ const BazarView: React.FC<BazarViewProps> = ({
 
             {/* Bazar History Section */}
             <div className="space-y-6 pb-10 mt-4">
-                <div className="flex items-center gap-2 px-2 border-b dark:border-zinc-800 pb-2">
-                    <Receipt size={14} className="text-md-primary" />
-                    <h4 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Bazar History</h4>
+                <div className="flex items-center justify-between px-2 border-b dark:border-zinc-800 pb-2">
+                    <div className="flex items-center gap-2">
+                        <Receipt size={14} className="text-md-primary" />
+                        <h4 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Bazar History</h4>
+                    </div>
+                    {isCurrentCalendarMonth && (
+                      <div className="flex items-center gap-1.5 text-[8px] font-black uppercase text-md-primary animate-pulse">
+                        <Sparkles size={10} /> AI Receipt Scanner Active
+                      </div>
+                    )}
                 </div>
                 {sortedDays.length === 0 ? (
                     <div className="py-20 text-center opacity-30 flex flex-col items-center gap-4">
@@ -336,7 +416,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                         <div className="w-7 h-7 rounded-lg bg-md-primary flex items-center justify-center text-white shadow-sm"><CalendarDays size={14} /></div>
                                         <p className="text-[11px] font-black uppercase">{new Date(dayKey).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>
                                     </div>
-                                    <p className="text-base font-black text-rose-600">Tk {dayData.dailyTotal.toLocaleString()}</p>
+                                    <p className="text-base font-black text-md-primary">Tk {dayData.dailyTotal.toLocaleString()}</p>
                                 </div>
                                 
                                 <div className="space-y-3">
@@ -351,15 +431,21 @@ const BazarView: React.FC<BazarViewProps> = ({
                                                         <Clock size={10} className="text-md-primary" />
                                                         <span className="text-[8px] font-black uppercase tracking-widest">{sessionTime}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-black text-md-primary opacity-60">Session Total: Tk {session.sessionTotal.toLocaleString()}</span>
+                                                    <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">Session Total: Tk {session.sessionTotal.toLocaleString()}</span>
                                                 </div>
                                                 <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-                                                    {session.items.map(t => (
-                                                        <div key={t.id} onClick={() => startEditing(t)} className="flex items-center justify-between p-3.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                                            <p className="font-[600] text-sm">{t.description}</p>
-                                                            <p className="font-black text-sm text-rose-600">Tk {t.amount.toLocaleString()}</p>
-                                                        </div>
-                                                    ))}
+                                                    {session.items.map(t => {
+                                                        const acc = accounts.find(a => a.id === t.accountId);
+                                                        return (
+                                                            <div key={t.id} onClick={() => startEditing(t)} className="flex items-center justify-between p-3.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                                <div>
+                                                                    <p className="font-[600] text-sm">{t.description}</p>
+                                                                    <p className="text-[8px] font-black uppercase tracking-widest mt-0.5" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
+                                                                </div>
+                                                                <p className="font-black text-sm text-md-on-surface dark:text-white">Tk {t.amount.toLocaleString()}</p>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         );
