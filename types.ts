@@ -1,3 +1,4 @@
+
 export type TransactionType = 'income' | 'expense' | 'transfer';
 export type AccountType = string;
 
@@ -23,6 +24,8 @@ export enum Category {
   TRANSFER = 'Transfer',
   LENDING = 'Lending & Debt',
   SEND_HOME = 'Send Home',
+  CREDIT = 'Credit',
+  INCOME = 'Income',
   OTHER = 'Other'
 }
 

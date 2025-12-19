@@ -77,18 +77,12 @@ const SyncView: React.FC<SyncViewProps> = ({ onBack, onPullData }) => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in slide-in-from-right duration-400">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-20 bg-md-primary px-4 pt-safe flex items-center gap-4 shadow-md">
-        <div className="flex items-center gap-4 py-4 text-white">
-            <button type="button" onClick={onBack} className="p-3 hover:bg-white/10 rounded-full transition-colors">
-              <ArrowLeft size={24}/>
-            </button>
-            <div>
-                <h2 className="text-xl font-black tracking-tight">Cloud Sync</h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Google Sheets Connection</p>
-            </div>
-        </div>
+    <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in fade-in duration-300">
+      <div className="px-6 space-y-6">
+          <div className="flex items-center gap-3 pt-4 pb-2">
+              <FileSpreadsheet className="text-md-primary" size={24} />
+              <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Cloud Sync</h2>
+          </div>
       </div>
 
       <div className="p-5 space-y-6">

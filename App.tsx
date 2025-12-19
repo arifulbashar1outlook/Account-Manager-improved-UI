@@ -31,7 +31,8 @@ import {
   Landmark,
   List,
   Target,
-  FileSpreadsheet
+  FileSpreadsheet,
+  PlusCircle
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -526,37 +527,33 @@ const App: React.FC = () => {
     return { inc, exp, bal: inc - exp };
   }, [transactions]);
 
-  const isFullscreenView = activeTab === 'wallet-manager' || activeTab === 'input' || activeTab === 'sync-setup';
-
   return (
     <div className="min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 transition-colors">
-      {!isFullscreenView && (
-        <header className="sticky top-0 z-50 bg-md-primary px-4 pt-safe flex items-center justify-between shadow-lg">
-           <div className="flex items-center gap-3 py-4">
-              <div className="bg-white/20 p-2.5 rounded-2xl text-white shadow-sm backdrop-blur-md border border-white/10"><LayoutDashboard size={22} /></div>
-              <div>
-                <h1 className="text-xl font-black tracking-tight text-white">Account Manager</h1>
-                <div className="flex items-center gap-1.5">
-                  <div className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-amber-400' : syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-indigo-300 animate-pulse' : 'bg-gray-300'}`}></div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/70">
-                    {!isOnline ? 'Offline' : syncStatus === 'synced' ? 'Cloud Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Local Mode'}
-                  </p>
-                </div>
+      <header className="sticky top-0 z-50 bg-md-primary px-4 pt-safe flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-3 py-4">
+            <div className="bg-white/20 p-2.5 rounded-2xl text-white shadow-sm backdrop-blur-md border border-white/10"><LayoutDashboard size={22} /></div>
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-white">Account Manager</h1>
+              <div className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-amber-400' : syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-indigo-300 animate-pulse' : 'bg-gray-300'}`}></div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-white/70">
+                  {!isOnline ? 'Offline' : syncStatus === 'synced' ? 'Cloud Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Local Mode'}
+                </p>
               </div>
-           </div>
-           <div className="flex items-center gap-1 py-4">
-              {!isOnline && (
-                <div className="bg-white/10 text-white p-2 rounded-full flex items-center gap-2 px-3 animate-in fade-in zoom-in border border-white/10">
-                   <WifiOff size={14} />
-                   <span className="text-[10px] font-black uppercase tracking-wider">Offline</span>
-                </div>
-              )}
-              <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors">
-                <Menu size={24}/>
-              </button>
-           </div>
-        </header>
-      )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 py-4">
+            {!isOnline && (
+              <div className="bg-white/10 text-white p-2 rounded-full flex items-center gap-2 px-3 animate-in fade-in zoom-in border border-white/10">
+                  <WifiOff size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-wider">Offline</span>
+              </div>
+            )}
+            <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors">
+              <Menu size={24}/>
+            </button>
+          </div>
+      </header>
 
       <main className="max-w-md mx-auto">
         {activeTab === 'dashboard' && (
@@ -594,17 +591,13 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'input' && (
-          <div className="animate-in slide-in-from-bottom-8 duration-500 fixed inset-0 z-[100] bg-md-surface dark:bg-zinc-950">
-             <div className="p-4 pt-safe flex items-center gap-4 border-b dark:border-zinc-800 bg-md-primary text-white shadow-lg">
-               <div className="flex items-center gap-4 py-2">
-                  <button onClick={() => setActiveTab('dashboard')} className="p-3 hover:bg-white/10 rounded-full transition-colors text-white"><ArrowLeft size={24}/></button>
-                  <h2 className="text-xl font-bold">New Entry</h2>
-               </div>
+          <div className="animate-in fade-in duration-300 p-4 space-y-6 pb-32">
+             <div className="flex items-center gap-3 pt-4 pb-2">
+                <PlusCircle className="text-md-primary" size={24} />
+                <h2 className="text-3xl font-black tracking-tight text-md-on-surface">New Entry</h2>
              </div>
-             <div className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-100px)]">
-                <SalaryManager onAddTransaction={handleAddTransaction} accounts={accounts} />
-                <TransactionForm onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
-             </div>
+             <SalaryManager onAddTransaction={handleAddTransaction} accounts={accounts} />
+             <TransactionForm onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
           </div>
         )}
 
@@ -651,7 +644,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {!isFullscreenView && (
+      {/* Floating Action Button - Only visible on relevant tabs */}
+      {activeTab === 'dashboard' && (
         <button 
           onClick={() => setActiveTab('input')}
           className="fixed bottom-[100px] right-6 w-16 h-16 bg-md-primary text-white rounded-3xl shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40"
@@ -689,7 +683,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {!isFullscreenView && <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />}
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 };

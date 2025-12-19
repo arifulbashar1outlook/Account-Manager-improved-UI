@@ -195,7 +195,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
 
   if (!selectedPerson) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32 animate-in fade-in duration-300">
+      <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in fade-in duration-300">
          {renamingPerson && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white dark:bg-zinc-900 rounded-[28px] shadow-2xl w-full max-w-sm p-6 space-y-6">
@@ -204,7 +204,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                         type="text" 
                         value={renamingPerson.newName}
                         onChange={(e) => setRenamingPerson({ ...renamingPerson, newName: e.target.value })}
-                        className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-black"
+                        className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-black dark:bg-zinc-800 dark:text-white"
                         placeholder="Enter name"
                         autoFocus
                     />
@@ -220,7 +220,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                             <Trash2 size={20} />
                         </button>
                         <div className="flex gap-2">
-                            <button type="button" onClick={() => setRenamingPerson(null)} className="px-5 py-2.5 text-sm font-black text-md-on-surface-variant hover:bg-md-surface-container rounded-full">Cancel</button>
+                            <button type="button" onClick={() => setRenamingPerson(null)} className="px-5 py-2.5 text-sm font-black text-md-on-surface-variant hover:bg-md-surface-container rounded-full dark:text-gray-300">Cancel</button>
                             <button type="button" onClick={handleRenamePerson} className="px-6 py-2.5 bg-md-primary text-white text-sm font-black rounded-full shadow-lg">Update</button>
                         </div>
                     </div>
@@ -235,7 +235,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                         <AlertTriangle className="w-8 h-8" />
                         <h3 className="text-xl font-bold">Clear History?</h3>
                     </div>
-                    <p className="text-sm text-md-on-surface-variant font-medium leading-relaxed">
+                    <p className="text-sm text-md-on-surface-variant font-medium leading-relaxed dark:text-gray-400">
                         This will permanently delete all lending and recovery records for <strong>{deletingPerson}</strong>. This cannot be undone.
                     </p>
                     <div className="flex justify-end gap-2 pt-4 border-t dark:border-zinc-800">
@@ -247,7 +247,10 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
          )}
 
          <div className="px-6 pt-4 space-y-6">
-            <h2 className="text-3xl font-black tracking-tight text-md-on-surface pb-6">Lending</h2>
+            <div className="flex items-center gap-3 pt-4 pb-2">
+                <HandCoins className="text-md-primary" size={24} />
+                <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Lending</h2>
+            </div>
             
             <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-md-on-surface-variant">
@@ -258,7 +261,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                     placeholder="Search name..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full bg-md-surface-container px-12 py-4 rounded-full text-sm font-black outline-none border-2 border-transparent focus:border-md-primary/30 focus:bg-white transition-all shadow-sm"
+                    className="w-full bg-md-surface-container px-12 py-4 rounded-full text-sm font-black outline-none border-2 border-transparent focus:border-md-primary/30 focus:bg-white transition-all shadow-sm dark:bg-zinc-800 dark:text-white"
                 />
                 <button 
                   type="button"
@@ -278,7 +281,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                             placeholder="Enter person name"
                             value={newPersonName}
                             onChange={e => setNewPersonName(e.target.value)}
-                            className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner"
+                            className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner dark:text-white"
                             autoFocus
                         />
                         <button 
@@ -295,7 +298,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             )}
          </div>
 
-         <div className="px-4 space-y-3">
+         <div className="px-4 mt-6 space-y-3">
             {filteredPeople.length === 0 ? (
                 <div className="py-20 text-center opacity-30 flex flex-col items-center gap-4">
                     <HandCoins size={64} strokeWidth={1} />
@@ -313,7 +316,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                                 {p.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <h3 className="font-black text-sm text-md-on-surface leading-tight tracking-tight">{p.name}</h3>
+                                <h3 className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{p.name}</h3>
                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                                     Last Active: {new Date(p.lastTxDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                                 </p>
@@ -355,7 +358,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
   }, 0);
 
   return (
-      <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32 animate-in slide-in-from-right duration-400">
+      <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in slide-in-from-right duration-400">
          {editingTx && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white dark:bg-zinc-900 rounded-[28px] shadow-2xl w-full max-w-sm p-6 space-y-5">
@@ -420,20 +423,18 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             </div>
          )}
 
-         <div className="sticky top-0 z-10 bg-md-primary px-4 pt-safe shadow-md">
-            <div className="flex items-center gap-4 py-4 text-white">
-               <button type="button" onClick={() => setSelectedPerson(null)} className="p-3 hover:bg-white/10 rounded-full transition-colors"><ArrowLeft size={24}/></button>
-               <div>
-                   <h2 className="text-lg font-black tracking-tight">{selectedPerson}</h2>
-                   <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Lending Directory</p>
-               </div>
-            </div>
-         </div>
-
          <div className="p-4 space-y-6">
-            <div className="bg-md-surface-container p-6 rounded-md-card shadow-sm border border-md-outline/10 text-center space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Net Outstanding Balance</p>
-                <h3 className={`text-4xl font-black tracking-tighter ${totalBalance > 0 ? 'text-rose-600' : totalBalance < 0 ? 'text-emerald-600' : 'text-md-on-surface'}`}>
+            <button 
+                onClick={() => setSelectedPerson(null)}
+                className="flex items-center gap-2 text-md-primary hover:bg-md-primary/5 px-3 py-2 rounded-full transition-all"
+            >
+                <ArrowLeft size={16} />
+                <span className="text-xs font-black uppercase tracking-widest">Back to List</span>
+            </button>
+
+            <div className="bg-md-surface-container dark:bg-zinc-900 p-6 rounded-md-card shadow-sm border border-md-outline/10 text-center space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Net Outstanding: {selectedPerson}</p>
+                <h3 className={`text-4xl font-black tracking-tighter ${totalBalance > 0 ? 'text-rose-600' : totalBalance < 0 ? 'text-emerald-600' : 'text-md-on-surface dark:text-white'}`}>
                     Tk {Math.abs(totalBalance).toLocaleString()}
                 </h3>
                 <div className="inline-block px-4 py-1.5 rounded-full bg-white dark:bg-zinc-800 text-[10px] font-black uppercase tracking-widest border border-gray-100 dark:border-zinc-700 shadow-sm">
@@ -442,7 +443,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             </div>
 
             <div className="bg-white dark:bg-zinc-900 p-6 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-5">
-                <div className="flex bg-md-surface-container p-1 rounded-full">
+                <div className="flex bg-md-surface-container dark:bg-zinc-800 p-1 rounded-full">
                     <button 
                         type="button"
                         onClick={() => setFormMode('lend')}

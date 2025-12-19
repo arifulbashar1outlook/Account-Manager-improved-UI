@@ -1,6 +1,25 @@
 
-import React, { useState, useMemo } from 'react';
-import { ShoppingBag, Plus, CalendarDays, Clock, Trash2, X, Check, ChevronLeft, ChevronRight, Store, ShoppingCart, Receipt, Hash } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { 
+  ShoppingBag, 
+  Plus, 
+  CalendarDays, 
+  Clock, 
+  Trash2, 
+  X, 
+  Check, 
+  ChevronLeft, 
+  ChevronRight, 
+  Store, 
+  ShoppingCart, 
+  Receipt, 
+  Hash, 
+  ChevronDown,
+  Sparkles,
+  Edit3,
+  ListPlus,
+  Settings2
+} from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
 
 interface BazarViewProps {
@@ -10,6 +29,8 @@ interface BazarViewProps {
   onUpdateTransaction: (t: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
 }
+
+const STORAGE_KEY_TEMPLATES = 'bazar_item_templates_v1';
 
 const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTransaction, onUpdateTransaction, onDeleteTransaction }) => {
     const getLocalDateTime = () => {
@@ -27,11 +48,26 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     const [dateTime, setDateTime] = useState(getLocalDateTime());
     const [viewDate, setViewDate] = useState(new Date());
 
+    // Custom Templates Logic
+    const [templates, setTemplates] = useState<string[]>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY_TEMPLATES);
+        return saved ? JSON.parse(saved) : ['Potato', 'Onion', 'Rice', 'Oil', 'Egg', 'Milk'];
+    });
+    const [newTemplate, setNewTemplate] = useState('');
+    const [isManagingTemplates, setIsManagingTemplates] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(templates));
+    }, [templates]);
+
     const [editingTx, setEditingTx] = useState<Transaction | null>(null);
     const [editDesc, setEditDesc] = useState('');
     const [editAmount, setEditAmount] = useState('');
     const [editDate, setEditDate] = useState('');
     const [editAccount, setEditAccount] = useState<AccountType>(defaultCash);
+
+    const itemInputRef = useRef<HTMLInputElement>(null);
+    const priceInputRef = useRef<HTMLInputElement>(null);
 
     const changeMonth = (offset: number) => {
         const newDate = new Date(viewDate);
@@ -53,20 +89,45 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     const handleQuickAdd = (e: React.FormEvent) => {
       e.preventDefault();
-      if(!item || !amount) return;
+      if(!item) return;
       
       const finalDate = dateTime ? new Date(dateTime).toISOString() : new Date().toISOString();
+      const finalAmount = amount === '' ? 0 : parseFloat(amount);
 
       onAddTransaction({
         description: item,
-        amount: parseFloat(amount),
+        amount: finalAmount,
         type: 'expense',
         category: Category.BAZAR,
         date: finalDate,
         accountId: paidFrom
       });
+      
       setItem('');
       setAmount('');
+      if (itemInputRef.current) {
+          itemInputRef.current.focus();
+      }
+    };
+
+    const handleSuggestionClick = (name: string) => {
+        setItem(name);
+        setTimeout(() => {
+          if (priceInputRef.current) {
+            priceInputRef.current.focus();
+          }
+        }, 50);
+    };
+
+    const addTemplate = () => {
+        if (newTemplate && !templates.includes(newTemplate)) {
+            setTemplates([...templates, newTemplate.trim()]);
+            setNewTemplate('');
+        }
+    };
+
+    const removeTemplate = (name: string) => {
+        setTemplates(templates.filter(t => t !== name));
     };
 
     const refreshTime = () => setDateTime(getLocalDateTime());
@@ -74,7 +135,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     const startEditing = (t: Transaction) => {
         setEditingTx(t);
         setEditDesc(t.description);
-        setEditAmount(t.amount.toString());
+        setEditAmount(t.amount === 0 ? '' : t.amount.toString());
         try {
             const d = new Date(t.date);
             const localIso = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
@@ -86,11 +147,11 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     };
 
     const saveEdit = () => {
-        if (!editingTx || !editDesc || !editAmount) return;
+        if (!editingTx || !editDesc) return;
         const updatedTx: Transaction = {
             ...editingTx,
             description: editDesc,
-            amount: parseFloat(editAmount),
+            amount: editAmount === '' ? 0 : parseFloat(editAmount),
             date: new Date(editDate).toISOString(),
             accountId: editAccount,
         };
@@ -107,7 +168,6 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
         }
     };
 
-    // Grouping: Day -> Session (Same Timestamp)
     const groupedStructure = useMemo(() => {
       const days: Record<string, { 
         dailyTotal: number, 
@@ -135,21 +195,17 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     }, [bazarTransactions]);
 
     const sortedDays = Object.keys(groupedStructure).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-
-    // Formatted date label for header: e.g., "Dec 25"
-    const monthShort = viewDate.toLocaleDateString('en-US', { month: 'short' });
-    const yearShort = viewDate.getFullYear().toString().slice(-2);
-    const dateLabel = `${monthShort} ${yearShort}`;
+    const dateLabel = `${viewDate.toLocaleDateString('en-US', { month: 'short' })} ${viewDate.getFullYear().toString().slice(-2)}`;
 
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-md-surface pb-32">
-         {/* Top Section with Title and Total Card */}
+      <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in fade-in duration-300">
+         {/* Top Section */}
          <div className="px-6 space-y-6">
             <div className="flex items-center justify-between pt-4 pb-2">
                 <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Bazar List</h2>
-                <div className="flex bg-md-surface-container rounded-full p-1 shadow-inner border border-black/5">
-                   <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-white rounded-full transition-all active:scale-90"><ChevronLeft size={20}/></button>
-                   <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-white rounded-full transition-all active:scale-90"><ChevronRight size={20}/></button>
+                <div className="flex bg-md-surface-container dark:bg-zinc-900 rounded-full p-1 shadow-inner border border-black/5">
+                   <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-white dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"><ChevronLeft size={20}/></button>
+                   <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-white dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"><ChevronRight size={20}/></button>
                 </div>
             </div>
             
@@ -162,7 +218,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60 mb-1">Total in {dateLabel}</p>
                         <h3 className="text-4xl font-black text-md-on-primary-container tracking-tighter">Tk {totalBazarSpend.toLocaleString()}</h3>
                     </div>
-                    <div className="bg-white/40 p-3 rounded-2xl text-md-on-primary-container shadow-sm">
+                    <div className="bg-white/40 p-3 rounded-2xl text-md-on-primary-container shadow-sm backdrop-blur-sm">
                         <ShoppingBag size={28} />
                     </div>
                 </div>
@@ -191,6 +247,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                     type="number" 
                                     value={editAmount}
                                     onChange={(e) => setEditAmount(e.target.value)}
+                                    placeholder="Enter price"
                                     className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-black dark:bg-zinc-800 dark:text-white"
                                 />
                             </div>
@@ -223,52 +280,125 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
             </div>
          )}
 
-         {/* Batch Entry Form */}
+         {/* Picker & Form Area */}
          <div className="px-4 mt-6 space-y-6">
             {isCurrentCalendarMonth && (
-                <form onSubmit={handleQuickAdd} className="bg-md-surface-container-high p-5 rounded-md-card border border-md-outline/10 shadow-sm space-y-4">
-                   <div className="flex items-center justify-between mb-1">
-                       <div className="flex items-center gap-3">
-                            <ShoppingCart size={18} className="text-md-primary" />
-                            <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant">Batch Entry</h4>
-                       </div>
-                       <button type="button" onClick={refreshTime} className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm text-md-primary active:rotate-180 transition-transform">
-                           <Clock size={16} />
-                       </button>
-                   </div>
-                   <div className="flex gap-3">
-                       <input 
-                         type="text" 
-                         value={item}
-                         onChange={(e) => setItem(e.target.value)}
-                         placeholder="Item name..."
-                         className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner dark:text-white"
-                         required
-                       />
-                       <input 
-                         type="number" 
-                         value={amount}
-                         onChange={(e) => setAmount(e.target.value)}
-                         placeholder="Price"
-                         className="w-24 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black text-rose-600 shadow-inner dark:text-rose-400"
-                         required
-                       />
-                   </div>
-                   <div className="flex items-center gap-3">
-                        <div className="flex-1 bg-white dark:bg-zinc-800 px-4 py-3 rounded-2xl shadow-inner relative overflow-hidden">
-                             <input 
-                              type="datetime-local" 
-                              value={dateTime}
-                              onChange={(e) => setDateTime(e.target.value)}
-                              className="w-full bg-transparent text-[11px] font-black outline-none dark:text-white"
+                <div className="space-y-4">
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between px-2">
+                            <div className="flex items-center gap-2">
+                                <ListPlus size={14} className="text-md-primary" />
+                                <h4 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">My Pick List</h4>
+                            </div>
+                            <button 
+                                onClick={() => setIsManagingTemplates(!isManagingTemplates)}
+                                className={`p-1.5 rounded-lg transition-colors ${isManagingTemplates ? 'bg-md-primary text-white' : 'text-gray-400 hover:bg-md-surface-container'}`}
+                            >
+                                <Settings2 size={16} />
+                            </button>
+                        </div>
+
+                        {isManagingTemplates && (
+                            <div className="p-4 bg-md-surface-container rounded-3xl border border-dashed border-md-primary/20 space-y-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text"
+                                        value={newTemplate}
+                                        onChange={(e) => setNewTemplate(e.target.value)}
+                                        placeholder="Add recurring item..."
+                                        className="flex-1 px-4 py-2 bg-white rounded-xl text-xs font-bold outline-none border-none shadow-inner"
+                                    />
+                                    <button 
+                                        onClick={addTemplate}
+                                        className="p-2 bg-md-primary text-white rounded-xl shadow-md active:scale-95"
+                                    >
+                                        <Plus size={20} />
+                                    </button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {templates.map(t => (
+                                        <div key={t} className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-[10px] font-black uppercase text-md-on-surface shadow-sm border border-gray-100">
+                                            {t}
+                                            <button onClick={() => removeTemplate(t)} className="text-rose-500 hover:bg-rose-50 p-0.5 rounded-full"><X size={12}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-2 px-1 max-h-40 overflow-y-auto no-scrollbar">
+                            {templates.map(itemName => (
+                                <button 
+                                    key={itemName}
+                                    type="button"
+                                    onClick={() => handleSuggestionClick(itemName)}
+                                    className={`px-4 py-2 border transition-all active:scale-95 shadow-sm rounded-2xl text-[11px] font-black ${
+                                      item === itemName 
+                                      ? 'bg-md-primary text-white border-md-primary' 
+                                      : 'bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-md-on-surface'
+                                    }`}
+                                >
+                                    {itemName}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleQuickAdd} className="bg-md-surface-container-high dark:bg-zinc-900 p-5 rounded-md-card border border-md-outline/10 shadow-sm space-y-4 animate-in slide-in-from-top-2">
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-3">
+                                <ShoppingCart size={18} className="text-md-primary" />
+                                <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant">Entry Form</h4>
+                            </div>
+                            <button type="button" onClick={refreshTime} className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm text-md-primary active:rotate-180 transition-transform">
+                                <Clock size={16} />
+                            </button>
+                        </div>
+                        <div className="flex gap-3">
+                            <input 
+                                ref={itemInputRef}
+                                type="text" 
+                                value={item}
+                                onChange={(e) => setItem(e.target.value)}
+                                placeholder="Item name..."
+                                className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner dark:text-white"
+                                required
+                            />
+                            <input 
+                                ref={priceInputRef}
+                                type="number" 
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                placeholder="Price"
+                                className="w-24 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black text-rose-600 shadow-inner dark:text-rose-400"
                             />
                         </div>
-                        <button type="submit" className="bg-md-primary text-white px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-md">
-                           Add to Batch
+                        <div className="flex items-center gap-3">
+                                <div className="flex-1 relative">
+                                    <select
+                                        value={paidFrom}
+                                        onChange={e => setPaidFrom(e.target.value as AccountType)}
+                                        className="w-full pl-4 pr-10 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-[11px] font-black appearance-none shadow-inner truncate uppercase tracking-tight dark:text-white"
+                                    >
+                                        {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 dark:text-white" />
+                                </div>
+                                <div className="flex-1 bg-white dark:bg-zinc-800 px-4 py-3 rounded-2xl shadow-inner relative overflow-hidden">
+                                    <input 
+                                    type="datetime-local" 
+                                    value={dateTime}
+                                    onChange={(e) => setDateTime(e.target.value)}
+                                    className="w-full bg-transparent text-[11px] font-black outline-none dark:text-white"
+                                    />
+                                </div>
+                        </div>
+                        <button type="submit" className="w-full bg-md-primary text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-3">
+                            <Plus size={18} strokeWidth={3} />
+                            Save to History
                         </button>
-                   </div>
-                   <p className="text-[9px] font-bold text-center text-gray-400 uppercase tracking-widest italic pt-1">Items sharing the same time will be grouped together</p>
-                </form>
+                    </form>
+                </div>
             )}
 
             {/* Transaction List */}
@@ -276,7 +406,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                 {bazarTransactions.length === 0 ? (
                     <div className="py-10 text-center opacity-30 flex flex-col items-center gap-4">
                         <Store size={64} strokeWidth={1} />
-                        <p className="font-black text-xs uppercase tracking-[0.2em]">Inventory Empty</p>
+                        <p className="font-black text-xs uppercase tracking-[0.2em]">List is Empty</p>
                     </div>
                 ) : (
                     sortedDays.map(dayKey => {
@@ -286,13 +416,13 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
                         return (
                             <div key={dayKey} className="space-y-6">
-                                <div className="flex justify-between items-center px-4 sticky top-[72px] z-10 bg-md-surface/80 backdrop-blur-md py-3 rounded-2xl shadow-sm border border-black/5">
+                                <div className="flex justify-between items-center px-4 sticky top-[72px] z-10 bg-md-surface/80 dark:bg-zinc-950/80 backdrop-blur-md py-3 rounded-2xl shadow-sm border border-black/5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-2xl bg-md-primary flex items-center justify-center text-white shadow-md">
                                             <CalendarDays size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-black text-md-on-surface tracking-tight">
+                                            <p className="text-sm font-black text-md-on-surface tracking-tight dark:text-white">
                                                 {dateObj.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' })}
                                             </p>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-md-primary">Daily Total</p>
@@ -308,35 +438,40 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                         const session = dayData.sessions[timeKey];
                                         return (
                                             <div key={timeKey} className="bg-white dark:bg-zinc-900 rounded-[32px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm relative">
-                                                <div className="bg-md-surface-container px-4 py-3 flex justify-between items-center border-b border-black/5">
+                                                <div className="bg-md-surface-container dark:bg-zinc-800 px-4 py-3 flex justify-between items-center border-b border-black/5">
                                                     <div className="flex items-center gap-2">
                                                         <Clock size={12} className="text-md-primary" />
-                                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest dark:text-gray-400">
                                                             Batch @ {new Date(timeKey).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </p>
                                                     </div>
-                                                    <p className="font-black text-rose-700 text-sm tracking-tight">Tk {session.sessionTotal.toLocaleString()}</p>
+                                                    <p className="font-black text-rose-700 dark:text-rose-400 text-sm tracking-tight">Tk {session.sessionTotal.toLocaleString()}</p>
                                                 </div>
                                                 
                                                 <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                                                     {session.items.map((t) => {
                                                         const acc = accounts.find(a => a.id === t.accountId);
+                                                        const isPending = t.amount === 0;
                                                         return (
                                                             <div 
                                                                 key={t.id} 
                                                                 onClick={() => startEditing(t)}
-                                                                className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer group active:bg-md-primary/5"
+                                                                className={`flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer group active:bg-md-primary/5 ${isPending ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}
                                                             >
                                                                 <div className="flex items-center gap-4">
-                                                                    <div className="w-9 h-9 rounded-xl bg-md-surface-container flex items-center justify-center text-md-primary dark:bg-zinc-800 shadow-inner">
-                                                                        <Receipt size={16} />
+                                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-inner ${isPending ? 'bg-amber-100 text-amber-600' : 'bg-md-surface-container text-md-primary dark:bg-zinc-800'}`}>
+                                                                        {isPending ? <Edit3 size={16} /> : <Receipt size={16} />}
                                                                     </div>
                                                                     <div>
-                                                                        <p className="font-black text-sm text-md-on-surface leading-tight dark:text-white group-hover:text-md-primary transition-colors">{t.description}</p>
+                                                                        <p className={`font-black text-sm leading-tight transition-colors ${isPending ? 'text-amber-800 dark:text-amber-300' : 'text-md-on-surface dark:text-white group-hover:text-md-primary'}`}>{t.description}</p>
                                                                         <p className="text-[9px] font-black uppercase tracking-widest mt-0.5 opacity-60" style={{ color: acc?.color || '#999' }}>{acc?.name || 'Wallet'}</p>
                                                                     </div>
                                                                 </div>
-                                                                <p className="font-black text-sm text-rose-600 dark:text-rose-400">Tk {t.amount.toLocaleString()}</p>
+                                                                <div className="text-right">
+                                                                    <p className={`font-black text-sm ${isPending ? 'text-amber-600' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                                        {isPending ? 'Pending Price' : `Tk ${t.amount.toLocaleString()}`}
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}

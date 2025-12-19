@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Edit2, Check, Save, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Check, Save, Trash2, X, CreditCard } from 'lucide-react';
 import { Account } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -63,17 +63,12 @@ const AccountsView: React.FC<AccountsViewProps> = ({ accounts, onUpdateAccounts,
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in slide-in-from-right duration-400">
-      <div className="sticky top-0 z-10 bg-md-primary px-4 pt-safe flex items-center gap-4 shadow-md">
-        <div className="flex items-center gap-4 py-4 text-white">
-            <button type="button" onClick={onBack} className="p-3 hover:bg-white/10 rounded-full transition-colors">
-              <ArrowLeft size={24}/>
-            </button>
-            <div>
-                <h2 className="text-xl font-black tracking-tight">Manage Wallets</h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/70">Account Settings</p>
-            </div>
-        </div>
+    <div className="max-w-md mx-auto min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 animate-in fade-in duration-300">
+      <div className="px-6 space-y-6">
+          <div className="flex items-center gap-3 pt-4 pb-2">
+              <CreditCard className="text-md-primary" size={24} />
+              <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Wallets</h2>
+          </div>
       </div>
 
       <div className="p-5 space-y-8">
