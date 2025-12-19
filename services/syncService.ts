@@ -21,25 +21,9 @@ export const clearSyncConfig = () => {
   localStorage.removeItem(SYNC_CONFIG_KEY);
 };
 
-/**
- * Merges cloud data with local data.
- * Prioritizes the order from the cloud (Pushing Sequence) as requested.
- */
+// No longer need complex merging for 'keep sheet only' policy
 export const mergeFinancialData = (local: Transaction[], cloud: Transaction[]): Transaction[] => {
-  const mergedMap = new Map<string, Transaction>();
-  
-  // Cloud data is the primary source of truth for "pushing time" order
-  cloud.forEach(t => mergedMap.set(t.id, t));
-  
-  // Local data that hasn't been synced yet should be at the start (newest entries)
-  local.forEach(t => {
-    if (!mergedMap.has(t.id)) {
-      mergedMap.set(t.id, t);
-    }
-  });
-
-  // Return values - preserving the sequence rather than sorting by date
-  return Array.from(mergedMap.values());
+  return cloud; // Sheet is the single source of truth during pull
 };
 
 export const pushToSheets = async (
@@ -109,7 +93,7 @@ export const pullFromSheets = async (): Promise<{
 
 export const GOOGLE_APPS_SCRIPT_CODE = `
 /**
- * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC (v3 - Order-Preserved Sync)
+ * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC (v4 - Master Source Sync)
  */
 function doGet(e) {
   var action = e.parameter.action;
@@ -165,7 +149,7 @@ function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
   if (payload.action === 'push') {
-    // 1. Transactions - Appended in the order they were pushed
+    // 1. Transactions - Replaced entirely to match local state
     var txSheet = ss.getSheetByName("Transactions") || ss.insertSheet("Transactions");
     txSheet.clear();
     txSheet.appendRow(["ID", "Date", "Amount", "Type", "Category", "Description", "AccountId", "TargetAccountId"]);

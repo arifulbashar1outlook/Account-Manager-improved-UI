@@ -32,13 +32,14 @@ import {
   List,
   Target,
   FileSpreadsheet,
-  PlusCircle
+  PlusCircle,
+  RotateCw
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Transaction, Category, Account } from './types';
 import { getStoredTransactions, saveStoredTransactions, getStoredAccounts, saveStoredAccounts } from './services/storage';
-import { getSyncConfig, pushToSheets, pullFromSheets, mergeFinancialData } from './services/syncService';
+import { getSyncConfig, pushToSheets, pullFromSheets } from './services/syncService';
 import TransactionForm from './components/TransactionForm';
 import SummaryCard from './components/SummaryCard';
 import BottomNavigation from './components/BottomNavigation';
@@ -348,46 +349,40 @@ const App: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   /**
-   * PULL DATA - Fetches state from Google Sheets.
+   * MANUAL PULL DATA - Strictly overwrites local state with cloud state.
+   * This is only triggered manually by the user.
    */
   const handleSyncPull = useCallback(async (silent = false) => {
     if (!navigator.onLine) {
         setSyncStatus('none');
+        alert("Cannot sync: Device is offline.");
         return;
     }
     if (!silent) setSyncStatus('syncing');
     
     const cloudData = await pullFromSheets();
     if (cloudData) {
-      // 1. Merge Transactions - using our push-sequence-preserving logic
-      setTransactions(prev => {
-        const merged = mergeFinancialData(prev, cloudData.transactions);
-        saveStoredTransactions(merged);
-        return merged;
-      });
+      // OVERWRITE local data with cloud data as the single source of truth
+      setTransactions(cloudData.transactions);
+      saveStoredTransactions(cloudData.transactions);
       
-      // 2. Merge Accounts
-      setAccounts(prev => {
-        const mergedAccs = [...prev];
-        cloudData.accounts.forEach(ca => {
-          if (!mergedAccs.find(la => la.id === ca.id)) mergedAccs.push(ca);
-        });
-        saveStoredAccounts(mergedAccs);
-        return mergedAccs;
-      });
+      setAccounts(cloudData.accounts);
+      saveStoredAccounts(cloudData.accounts);
 
-      // 3. Set Bazar State
       setBazarTemplates(cloudData.templates);
       setToBuyList(cloudData.toBuyList);
 
       setSyncStatus('synced');
     } else {
-      if (!silent) setSyncStatus('error');
+      if (!silent) {
+        setSyncStatus('error');
+        alert("Failed to pull data from Google Sheets. Check your setup.");
+      }
     }
   }, []);
 
   /**
-   * PUSH DATA - Updates the Google Sheet with current local state.
+   * AUTOMATIC PUSH DATA - Updates Google Sheet whenever a change happens locally.
    */
   const triggerAutoPush = useCallback(async (overrides?: { txs?: Transaction[], accs?: Account[], tmpl?: string[], buy?: string[] }) => {
     if (!navigator.onLine) {
@@ -396,7 +391,6 @@ const App: React.FC = () => {
     }
     setSyncStatus('syncing');
     
-    // We do NOT sort by date here to preserve "pushing time" sequence as requested.
     const txsToPush = overrides?.txs || transactions;
     const accsToPush = overrides?.accs || accounts;
     const tmplToPush = overrides?.tmpl || bazarTemplates;
@@ -406,48 +400,28 @@ const App: React.FC = () => {
     
     if (success) {
       setSyncStatus('synced');
-      // After pushing, immediately pull to ensure we have the latest consolidated view
-      await handleSyncPull(true);
     } else {
       setSyncStatus('error');
     }
-  }, [transactions, accounts, bazarTemplates, toBuyList, handleSyncPull]);
+  }, [transactions, accounts, bazarTemplates, toBuyList]);
 
-  /**
-   * BOOT SEQUENCE - First pull data, then start background sync
-   */
+  // Network state observer
   useEffect(() => {
-    const config = getSyncConfig();
-    if (config && config.url && navigator.onLine) {
-      // Boot pull
-      handleSyncPull().then(() => {
-        // Background sync every 60 seconds
-        const pollInterval = setInterval(() => {
-          if (navigator.onLine) handleSyncPull(true);
-        }, 60000); 
-        return () => clearInterval(pollInterval);
-      });
-    }
-  }, [handleSyncPull]);
-
-  // Network lifecycle management
-  useEffect(() => {
-    const handleOnline = () => { setIsOnline(true); handleSyncPull(true).then(() => triggerAutoPush()); };
+    const handleOnline = () => { setIsOnline(true); triggerAutoPush(); };
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
-  }, [handleSyncPull, triggerAutoPush]);
+    return () => { 
+        window.removeEventListener('online', handleOnline); 
+        window.removeEventListener('offline', handleOffline); 
+    };
+  }, [triggerAutoPush]);
 
   /**
-   * CENTRALIZED DATA MODIFICATION FLOW
-   * 1. Update State
-   * 2. Save LocalStorage
-   * 3. Push to Cloud
+   * DATA MODIFICATION - Local Change -> Immediate Auto-Push
    */
   const handleAddTransaction = (t: Omit<Transaction, 'id'>) => {
     const newTx = {...t, id: uuidv4()};
-    // Prepend to array to show newest first in local view
     const updated = [newTx, ...transactions];
     setTransactions(updated);
     saveStoredTransactions(updated);
@@ -510,14 +484,23 @@ const App: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <div className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-amber-400' : syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-indigo-300 animate-pulse' : 'bg-gray-300'}`}></div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-white/70">
-                  {!isOnline ? 'Offline' : syncStatus === 'synced' ? 'Cloud Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Local Mode'}
+                  {!isOnline ? 'Offline' : syncStatus === 'synced' ? 'Cloud Updated' : syncStatus === 'syncing' ? 'Pushing...' : 'Local Ready'}
                 </p>
               </div>
             </div>
           </div>
-          <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors">
-            <Menu size={24}/>
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => handleSyncPull(false)} 
+              title="Manual Pull from Cloud"
+              className={`p-2.5 rounded-full hover:bg-white/10 text-white transition-all ${syncStatus === 'syncing' ? 'animate-spin' : ''}`}
+            >
+              <RotateCw size={22}/>
+            </button>
+            <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors">
+              <Menu size={24}/>
+            </button>
+          </div>
       </header>
 
       <main className="max-w-md mx-auto">
