@@ -14,7 +14,8 @@ import {
   Link2, 
   ChevronRight,
   Database,
-  Unlink
+  Unlink,
+  Code
 } from 'lucide-react';
 import { getSyncConfig, saveSyncConfig, clearSyncConfig, GOOGLE_APPS_SCRIPT_CODE } from '../services/syncService';
 
@@ -73,7 +74,7 @@ const SyncView: React.FC<SyncViewProps> = ({ onBack, onPullData }) => {
   const copyCode = () => {
     navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (
@@ -139,20 +140,28 @@ const SyncView: React.FC<SyncViewProps> = ({ onBack, onPullData }) => {
                     <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface">Deploy Apps Script</h4>
                 </div>
                 <p className="text-xs text-md-on-surface-variant leading-relaxed">
-                    Open your Google Sheet, go to <b>Extensions &gt; Apps Script</b>, paste this code, and <b>Deploy as Web App</b> (Access: "Anyone").
+                    Open your Google Sheet, go to <b>Extensions &gt; Apps Script</b>, then click the box below to copy the code.
                 </p>
                 
-                <div className="relative group">
-                    <pre className="bg-zinc-950 text-emerald-400 p-4 rounded-2xl text-[10px] overflow-x-auto h-32 border border-white/5 font-mono shadow-inner">
-                        {GOOGLE_APPS_SCRIPT_CODE}
-                    </pre>
-                    <button 
-                        onClick={copyCode}
-                        className="absolute top-2 right-2 p-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-90"
-                    >
-                        {copied ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                        {copied ? 'Copied' : 'Copy'}
-                    </button>
+                <div 
+                    onClick={copyCode}
+                    className={`relative p-8 rounded-[24px] border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center gap-3 active:scale-95 ${
+                        copied 
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-500 dark:text-emerald-400' 
+                        : 'bg-md-primary/5 border-md-primary/30 text-md-primary hover:bg-md-primary/10 dark:bg-zinc-800 dark:border-zinc-700'
+                    }`}
+                >
+                    {copied ? (
+                      <CheckCircle2 size={40} className="animate-in zoom-in duration-300" />
+                    ) : (
+                      <Code size={40} className="opacity-60" />
+                    )}
+                    <div className="text-center">
+                        <p className="font-black text-xs uppercase tracking-[0.15em]">{copied ? 'Code Copied!' : 'Copy Sync Script'}</p>
+                        <p className="text-[10px] opacity-60 font-bold uppercase tracking-tight mt-1">
+                            {copied ? 'Paste into your script editor' : 'Click to copy to clipboard'}
+                        </p>
+                    </div>
                 </div>
             </div>
 
