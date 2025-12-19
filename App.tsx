@@ -19,7 +19,8 @@ import {
   Sparkles,
   Zap,
   ArrowRight,
-  PieChart
+  PieChart,
+  Bot
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -41,6 +42,7 @@ import LendingView from './components/LendingView';
 import BazarView from './components/BazarView';
 import HistoryView from './components/HistoryView';
 import FullMonthlyReport from './components/FullMonthlyReport';
+import AiView from './components/AiView';
 
 const useKeyboardVisibility = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -176,7 +178,6 @@ const App: React.FC = () => {
     
     const healthScore = Math.min(100, Math.max(0, inc > 0 ? ((inc - exp) / inc) * 100 : 0));
 
-    // Top categories for dashboard insight
     const catTotals: Record<string, number> = {};
     filteredMonth.filter(t => t.type === 'expense').forEach(t => {
        catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
@@ -204,16 +205,16 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 transition-colors">
-      <header className="sticky top-0 z-50 bg-md-primary px-4 pt-safe flex items-center justify-between shadow-lg h-[96px]">
+      <header className="sticky top-0 z-50 bg-md-primary/80 backdrop-blur-xl px-4 pt-safe flex items-center justify-between shadow-lg h-[96px] border-b border-white/10">
           <div className="flex items-center gap-3.5">
-            <div className="bg-white/20 p-2.5 rounded-2xl text-white shadow-sm backdrop-blur-md border border-white/10">
+            <div className="bg-white/20 p-2.5 rounded-2xl text-white shadow-sm border border-white/20">
               <LayoutDashboard size={24} strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-[20px] font-[800] tracking-tight text-white leading-none">Account Manager</h1>
+              <h1 className="text-[20px] font-extrabold tracking-tight text-white leading-none">Account Manager</h1>
               <div className="flex items-center gap-1.5 mt-1 opacity-80">
                 <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-white">{syncStatus === 'syncing' ? 'Syncing...' : 'System Active'}</p>
+                <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-white/80">{syncStatus === 'syncing' ? 'Syncing...' : 'System Active'}</p>
               </div>
             </div>
           </div>
@@ -227,47 +228,47 @@ const App: React.FC = () => {
       <main className="max-w-md mx-auto">
         {activeTab === 'dashboard' && (
           <div className="p-6 space-y-6 animate-in fade-in duration-500">
-            {/* Primary Balance Card */}
-            <div className="bg-md-primary-container p-8 rounded-[36px] shadow-sm border border-md-primary/10 relative overflow-hidden group">
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-md-primary/5 rounded-full blur-3xl group-hover:scale-110 transition-transform"></div>
+            {/* Primary Balance Card with Mesh Gradient */}
+            <div className="mesh-gradient-primary p-8 rounded-[36px] shadow-2xl relative overflow-hidden group border border-white/20">
+                <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl animate-mesh"></div>
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-1">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-primary-container opacity-60">Monthly Balance</p>
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/40 rounded-full">
-                      <Zap size={10} className="text-md-primary" />
-                      <span className="text-[8px] font-black uppercase tracking-tighter text-md-primary">Health: {summary.healthScore.toFixed(0)}%</span>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white opacity-60">Monthly Balance</p>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full border border-white/10">
+                      <Zap size={10} className="text-white" />
+                      <span className="text-[8px] font-black uppercase tracking-tighter text-white">Health: {summary.healthScore.toFixed(0)}%</span>
                     </div>
                   </div>
-                  <h2 className="text-5xl font-[900] text-md-on-primary-container tracking-tighter mb-6">Tk {summary.bal.toLocaleString()}</h2>
+                  <h2 className="text-5xl font-black text-white tracking-tighter mb-6">Tk {summary.bal.toLocaleString()}</h2>
                   
-                  <div className="pt-5 border-t border-md-on-primary-container/10 flex items-center justify-between">
+                  <div className="pt-5 border-t border-white/10 flex items-center justify-between">
                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-white/60 rounded-2xl shadow-sm"><Activity size={18} className="text-md-primary" /></div>
+                        <div className="p-2.5 bg-white/20 rounded-2xl shadow-sm border border-white/10 backdrop-blur-md"><Activity size={18} className="text-white" /></div>
                         <div>
-                          <p className="text-[8px] font-black uppercase tracking-widest text-md-on-primary-container/40 leading-none mb-1">Daily Burn</p>
-                          <p className="text-base font-black text-md-on-primary-container">Tk {summary.dailyAvg.toFixed(0)}</p>
+                          <p className="text-[8px] font-medium uppercase tracking-widest text-white/50 leading-none mb-1">Daily Burn</p>
+                          <p className="text-base font-black text-white">Tk {summary.dailyAvg.toFixed(0)}</p>
                         </div>
                      </div>
                      <div className="text-right">
-                       <p className="text-[8px] font-black uppercase tracking-widest text-md-on-primary-container/40 leading-none mb-1">Projected Total</p>
-                       <p className="text-base font-black text-rose-700">Tk {summary.projectedExp.toFixed(0)}</p>
+                       <p className="text-[8px] font-medium uppercase tracking-widest text-white/50 leading-none mb-1">Projected Total</p>
+                       <p className="text-base font-black text-white">Tk {summary.projectedExp.toFixed(0)}</p>
                      </div>
                   </div>
                 </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-               <SummaryCard title="Inflow" amount={summary.inc} icon={TrendingUp} colorClass="text-emerald-700" bgClass="bg-emerald-100" />
-               <SummaryCard title="Outflow" amount={summary.exp} icon={TrendingDown} colorClass="text-rose-700" bgClass="bg-rose-100" />
+               <SummaryCard title="Inflow" amount={summary.inc} icon={TrendingUp} colorClass="text-emerald-500 dark:text-emerald-400" bgClass="bg-emerald-500" />
+               <SummaryCard title="Outflow" amount={summary.exp} icon={TrendingDown} colorClass="text-rose-500 dark:text-rose-400" bgClass="bg-rose-500" />
             </div>
 
-            {/* Quick Stats/Trends Improvement */}
+            {/* Quick Stats/Trends Improvement with Glassmorphism */}
             {summary.topCategories.length > 0 && (
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-[32px] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-4">
+              <div className="glass p-6 rounded-[32px] shadow-sm space-y-4">
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                        <PieChart size={16} className="text-md-primary" />
-                       <h3 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Spending Trends</h3>
+                       <h3 className="font-medium text-[10px] uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Spending Trends</h3>
                     </div>
                     <button onClick={() => setActiveTab('full-report')} className="text-[9px] font-black uppercase tracking-widest text-md-primary flex items-center gap-1 group">
                        Details <ArrowRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
@@ -276,9 +277,9 @@ const App: React.FC = () => {
                  <div className="space-y-3">
                     {summary.topCategories.map(([cat, val]) => (
                        <div key={cat} className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-md-on-surface/70 truncate flex-1">{cat}</p>
+                          <p className="text-xs font-semibold text-md-on-surface/80 truncate flex-1">{cat}</p>
                           <div className="flex items-center gap-3 flex-1 px-4">
-                             <div className="h-1.5 flex-1 bg-gray-50 dark:bg-zinc-800 rounded-full overflow-hidden">
+                             <div className="h-1.5 flex-1 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-black/5 dark:border-white/5">
                                 <div className="h-full bg-md-primary/40 rounded-full" style={{ width: `${(val / summary.exp) * 100}%` }}></div>
                              </div>
                           </div>
@@ -290,17 +291,17 @@ const App: React.FC = () => {
             )}
 
             {/* Health Score Gauge */}
-            <div className="bg-white dark:bg-zinc-900 p-5 rounded-[32px] border border-gray-100 dark:border-zinc-800 shadow-sm">
+            <div className="glass p-5 rounded-[32px] shadow-sm">
                <div className="flex items-center justify-between mb-4 px-1">
                  <div className="flex items-center gap-2">
                    <Target size={16} className="text-md-primary" />
-                   <h3 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Savings Performance</h3>
+                   <h3 className="font-medium text-[10px] uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Savings Performance</h3>
                  </div>
-                 <span className={`text-[10px] font-black ${summary.healthScore > 30 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                 <span className={`text-[10px] font-black ${summary.healthScore > 30 ? 'text-emerald-500' : 'text-amber-500'}`}>
                     {summary.healthScore > 50 ? 'Excellent' : summary.healthScore > 20 ? 'Good' : 'Critical'}
                  </span>
                </div>
-               <div className="h-2 w-full bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+               <div className="h-2 w-full bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-black/5 dark:border-white/5">
                   <div 
                     className={`h-full transition-all duration-1000 ${
                       summary.healthScore > 50 ? 'bg-emerald-500' : 
@@ -315,16 +316,16 @@ const App: React.FC = () => {
                <div className="flex items-center justify-between px-1">
                  <div className="flex items-center gap-2">
                    <WalletIcon size={18} className="text-md-primary" />
-                   <h3 className="font-black text-[11px] uppercase tracking-widest text-md-on-surface-variant">Wallet Balances</h3>
+                   <h3 className="font-medium text-[11px] uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Wallet Balances</h3>
                  </div>
                  <button onClick={() => setActiveTab('wallet-manager')} className="text-[10px] font-black uppercase tracking-widest text-md-primary px-4 py-1.5 bg-md-primary/10 rounded-full active:scale-95 transition-all">Setup</button>
                </div>
                <div className="grid gap-3">
                  {accounts.map(acc => (
-                   <div key={acc.id} className="bg-white dark:bg-zinc-900 p-6 rounded-[28px] border border-gray-100 dark:border-zinc-800 flex justify-between items-center shadow-sm active:bg-gray-50 transition-all hover:translate-x-1">
+                   <div key={acc.id} className="glass p-6 rounded-[28px] flex justify-between items-center shadow-sm active:bg-gray-50 dark:active:bg-zinc-800 transition-all hover:translate-x-1 group">
                       <div className="flex items-center gap-4">
-                        <div className="w-1.5 h-9 rounded-full" style={{ backgroundColor: acc.color }}></div>
-                        <p className="font-[800] text-lg tracking-tight" style={{ color: acc.color }}>{acc.name}</p>
+                        <div className="w-1.5 h-9 rounded-full group-hover:scale-y-110 transition-transform" style={{ backgroundColor: acc.color }}></div>
+                        <p className="font-extrabold text-lg tracking-tight" style={{ color: acc.color }}>{acc.name}</p>
                       </div>
                       <p className="font-black text-sm text-md-on-surface dark:text-gray-100">Tk {accountBalances[acc.id]?.toLocaleString()}</p>
                    </div>
@@ -338,7 +339,7 @@ const App: React.FC = () => {
           <div className="animate-in fade-in duration-300 p-4 space-y-6 pb-32">
              <div className="flex items-center gap-3 pt-4 pb-2">
                 <PlusCircle className="text-md-primary" size={24} />
-                <h2 className="text-3xl font-[800] tracking-tight text-md-on-surface">New Entry</h2>
+                <h2 className="text-3xl font-extrabold tracking-tight text-md-on-surface">New Entry</h2>
              </div>
              <SalaryManager onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
              <TransactionForm onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
@@ -351,22 +352,24 @@ const App: React.FC = () => {
         {activeTab === 'lending' && <LendingView transactions={transactions} accounts={accounts} onAddTransaction={handleAddTransaction} onUpdateTransaction={handleUpdateTransaction} onDeleteTransaction={handleDeleteTransaction} />}
         {activeTab === 'wallet-manager' && <AccountsView accounts={accounts} onUpdateAccounts={accs => { setAccounts(accs as Account[]); triggerAutoPush({ accs: accs as Account[] }); }} onBack={() => setActiveTab('dashboard')} />}
         {activeTab === 'sync-setup' && <SyncView onBack={() => setActiveTab('dashboard')} onPullData={handleSyncPull} />}
+        {activeTab === 'ai-setup' && <AiView onBack={() => setActiveTab('dashboard')} />}
       </main>
 
       {!isKeyboardVisible && activeTab === 'dashboard' && (
-        <button onClick={() => setActiveTab('input')} className="fixed bottom-[100px] right-6 w-16 h-16 bg-md-primary text-white rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40">
+        <button onClick={() => setActiveTab('input')} className="fixed bottom-[100px] right-6 w-16 h-16 bg-md-primary text-white rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40 border border-white/20">
           <Plus size={32} strokeWidth={3} />
         </button>
       )}
 
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[110] bg-black/40 animate-in fade-in duration-300" onClick={() => setIsMenuOpen(false)}>
-           <div className="absolute right-0 top-0 bottom-0 w-[300px] bg-md-surface dark:bg-zinc-900 p-8 pt-safe animate-in slide-in-from-right duration-400 rounded-l-[40px] shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-10 py-4">
-                <h3 className="font-[800] text-xl">System</h3>
-                <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 rounded-full"><XIcon size={24}/></button>
+        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsMenuOpen(false)}>
+           <div className="absolute right-0 top-0 bottom-0 w-[300px] glass p-8 pt-safe animate-in slide-in-from-right duration-400 rounded-l-[40px] shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-10 py-4 border-b border-black/5 dark:border-white/5">
+                <h3 className="font-extrabold text-xl">System</h3>
+                <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full"><XIcon size={24}/></button>
               </div>
               <div className="space-y-1.5">
+                 <MenuBtn onClick={() => { setActiveTab('ai-setup'); setIsMenuOpen(false); }} icon={Bot} label="AI Features" />
                  <MenuBtn onClick={() => { setActiveTab('sync-setup'); setIsMenuOpen(false); }} icon={FileSpreadsheet} label="Cloud Sync Setup" />
                  <MenuBtn onClick={() => { setActiveTab('wallet-manager'); setIsMenuOpen(false); }} icon={CreditCard} label="Manage Wallets" />
                  <MenuBtn onClick={() => { setActiveTab('lending'); setIsMenuOpen(false); }} icon={HandCoins} label="Debt & Loans" />
@@ -381,8 +384,8 @@ const App: React.FC = () => {
 };
 
 const MenuBtn = ({ onClick, icon: Icon, label }: any) => (
-  <button onClick={onClick} className="w-full flex items-center gap-4 py-4.5 px-6 rounded-2xl hover:bg-black/5 text-sm font-[700] transition-all active:scale-95 group">
-     <div className="p-2 bg-md-primary/5 rounded-xl text-md-primary group-hover:scale-110 transition-transform"><Icon size={20} /></div>
+  <button onClick={onClick} className="w-full flex items-center gap-4 py-4 px-6 rounded-2xl hover:bg-md-primary/10 dark:hover:bg-md-primary/20 text-sm font-semibold transition-all active:scale-95 group">
+     <div className="p-2.5 bg-md-primary/5 dark:bg-white/5 rounded-xl text-md-primary group-hover:scale-110 transition-transform"><Icon size={20} /></div>
      {label}
   </button>
 );

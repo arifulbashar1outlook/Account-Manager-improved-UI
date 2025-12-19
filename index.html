@@ -45,6 +45,20 @@
               'md-full': '100px',
               'md-card': '28px',
               'md-input': '12px',
+            },
+            animation: {
+              'mesh': 'mesh 8s ease-in-out infinite alternate',
+              'pulse-soft': 'pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              mesh: {
+                '0%': { transform: 'scale(1) translate(0%, 0%)' },
+                '100%': { transform: 'scale(1.2) translate(5%, 5%)' },
+              },
+              'pulse-soft': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.7 },
+              }
             }
           }
         }
@@ -58,45 +72,72 @@
         background-color: #FEF7FF;
         color: #1D1B20;
       }
+      /* Night Mode+: Deep Navy for better depth */
       .dark body {
-        background-color: #141218;
+        background-color: #0A0A0C;
         color: #E6E1E5;
       }
       .safe-bottom {
         padding-bottom: env(safe-area-inset-bottom);
       }
-      /* New Safe Top Padding for APKs */
       .pt-safe {
         padding-top: env(safe-area-inset-top);
-      }
-      .safe-top-mt {
-        margin-top: env(safe-area-inset-top);
       }
       
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-thumb { background: #79747E; border-radius: 10px; }
       
-      .md-ripple {
+      .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 0.5px solid rgba(255, 255, 255, 0.3);
+      }
+      .dark .glass {
+        background: rgba(20, 18, 24, 0.7);
+        border: 0.5px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .mesh-gradient-primary {
+        background-color: #6750A4;
+        background-image: 
+          radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+          radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+          radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+      }
+
+      .mesh-gradient-ai {
+        background-color: #4F46E5;
+        background-image: 
+          radial-gradient(at 0% 100%, hsla(243,75%,58%,1) 0, transparent 50%), 
+          radial-gradient(at 50% 0%, hsla(263,75%,58%,1) 0, transparent 50%), 
+          radial-gradient(at 100% 100%, hsla(183,75%,58%,1) 0, transparent 50%);
+      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* Swipe action transitions */
+      .swipe-container {
         position: relative;
         overflow: hidden;
       }
-      .md-ripple:active::after {
-        content: "";
+      .swipe-content {
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform;
+      }
+      .swipe-action {
         position: absolute;
-        width: 100%;
-        height: 100%;
         top: 0;
-        left: 0;
-        background: rgba(103, 80, 164, 0.12);
-        pointer-events: none;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        z-index: 0;
       }
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
+      .swipe-action-left { left: 0; }
+      .swipe-action-right { right: 0; }
     </style>
   <script type="importmap">
 {

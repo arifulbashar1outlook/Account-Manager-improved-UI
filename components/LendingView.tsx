@@ -19,7 +19,9 @@ import {
   ArrowRightLeft,
   Calendar,
   ChevronDown,
-  Clock
+  Clock,
+  ArrowUpCircle,
+  ArrowDownCircle
 } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
 
@@ -39,7 +41,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
 
   const [amount, setAmount] = useState('');
   const [account, setAccount] = useState<AccountType>(defaultCash);
-  const [formMode, setFormMode] = useState<'lend' | 'recover'>('lend');
+  const [formMode, setFormMode] = useState<'give' | 'receive'>('give');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -56,11 +58,11 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
 
   const getPersonData = (t: Transaction) => {
     if (t.category !== Category.LENDING) return null;
-    const lendMatch = t.description.match(/Lent to\s+(.*)/i);
-    const returnMatch = t.description.match(/Returned by\s+(.*)/i);
+    const giveMatch = t.description.match(/(Lent to|Given to)\s+(.*)/i);
+    const receiveMatch = t.description.match(/(Returned by|Received from)\s+(.*)/i);
     
-    if (lendMatch) return { name: lendMatch[1].trim(), type: 'lend', amount: t.amount };
-    if (returnMatch) return { name: returnMatch[1].trim(), type: 'recover', amount: t.amount };
+    if (giveMatch) return { name: giveMatch[2].trim(), type: 'give', amount: t.amount };
+    if (receiveMatch) return { name: receiveMatch[2].trim(), type: 'receive', amount: t.amount };
     return null;
   };
 
@@ -75,7 +77,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
         people[data.name] = { balance: 0, lastTxDate: t.date };
       }
       
-      if (data.type === 'lend') {
+      if (data.type === 'give') {
         people[data.name].balance += data.amount;
       } else {
         people[data.name].balance -= data.amount;
@@ -90,6 +92,11 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => new Date(b.lastTxDate).getTime() - new Date(a.lastTxDate).getTime());
   }, [transactions]);
+
+  const maxBalance = useMemo(() => {
+      const vals = peopleData.map(p => Math.abs(p.balance));
+      return vals.length > 0 ? Math.max(...vals) : 1000;
+  }, [peopleData]);
 
   const filteredPeople = peopleData.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -106,11 +113,11 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
   const handleTransaction = () => {
     if (!amount || !selectedPerson) return;
     
-    const description = formMode === 'lend' 
-      ? `Lent to ${selectedPerson}` 
-      : `Returned by ${selectedPerson}`;
+    const description = formMode === 'give' 
+      ? `Given to ${selectedPerson}` 
+      : `Received from ${selectedPerson}`;
       
-    const type = formMode === 'lend' ? 'expense' : 'income';
+    const type = formMode === 'give' ? 'expense' : 'income';
 
     onAddTransaction({
       amount: parseFloat(amount),
@@ -126,7 +133,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
 
   const handleAddNewPerson = () => {
     if(newPersonName) {
-        setSelectedPerson(newPersonName);
+        setSelectedPerson(newPersonName.trim());
         setNewPersonName('');
         setIsAddingNew(false);
     }
@@ -236,7 +243,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                         <h3 className="text-xl font-bold">Clear History?</h3>
                     </div>
                     <p className="text-sm text-md-on-surface-variant font-medium leading-relaxed dark:text-gray-400">
-                        This will permanently delete all lending and recovery records for <strong>{deletingPerson}</strong>. This cannot be undone.
+                        This will permanently delete all transaction records for <strong>{deletingPerson}</strong>. This cannot be undone.
                     </p>
                     <div className="flex justify-end gap-2 pt-4 border-t dark:border-zinc-800">
                         <button type="button" onClick={() => setDeletingPerson(null)} className="px-5 py-2.5 text-sm font-black text-md-on-surface-variant hover:bg-md-surface-container rounded-full">Cancel</button>
@@ -249,7 +256,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
          <div className="px-6 pt-4 space-y-6">
             <div className="flex items-center gap-3 pt-4 pb-2">
                 <HandCoins className="text-md-primary" size={24} />
-                <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Lending</h2>
+                <h2 className="text-3xl font-black tracking-tight text-md-on-surface">Lending & Borrowing</h2>
             </div>
             
             <div className="relative group">
@@ -274,7 +281,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
 
             {isAddingNew && (
                 <div className="bg-md-primary-container p-6 rounded-md-card shadow-sm border border-md-primary/10 animate-in slide-in-from-top-4">
-                    <h3 className="font-black text-xs uppercase tracking-widest text-md-on-primary-container mb-4">Add New Contact</h3>
+                    <h3 className="font-black text-xs uppercase tracking-widest text-md-on-primary-container mb-4">Add Contact</h3>
                     <div className="flex gap-3">
                         <input 
                             type="text"
@@ -287,7 +294,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                         <button 
                             type="button"
                             onClick={handleAddNewPerson}
-                            disabled={!newPersonName}
+                            disabled={!newPersonName.trim()}
                             className="bg-md-primary text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-50 active:scale-95 shadow-md"
                         >
                             Start
@@ -302,47 +309,69 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             {filteredPeople.length === 0 ? (
                 <div className="py-20 text-center opacity-30 flex flex-col items-center gap-4">
                     <HandCoins size={64} strokeWidth={1} />
-                    <p className="font-black text-xs uppercase tracking-[0.2em]">No Active Loans</p>
+                    <p className="font-black text-xs uppercase tracking-[0.2em]">No Active Records</p>
                 </div>
             ) : (
                 filteredPeople.map(p => (
                     <div 
                       key={p.name}
                       onClick={() => setSelectedPerson(p.name)}
-                      className="bg-white dark:bg-zinc-900 p-5 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm flex items-center justify-between cursor-pointer hover:bg-md-surface-container group transition-all active:scale-[0.98] md-ripple"
+                      className="bg-white dark:bg-zinc-900 p-5 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm flex flex-col gap-4 cursor-pointer hover:bg-md-surface-container group transition-all active:scale-[0.98] md-ripple"
                     >
-                        <div className="flex items-center gap-4 flex-1">
-                            <div className="w-12 h-12 rounded-2xl bg-md-primary-container text-md-primary flex items-center justify-center font-black text-lg">
-                                {p.name.charAt(0).toUpperCase()}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4 flex-1">
+                                <div className="w-12 h-12 rounded-2xl bg-md-primary-container text-md-primary flex items-center justify-center font-black text-lg">
+                                    {p.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{p.name}</h3>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                        Last Active: {new Date(p.lastTxDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{p.name}</h3>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                    Last Active: {new Date(p.lastTxDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                </p>
+                            <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                    <p className={`font-black text-sm ${p.balance > 0 ? 'text-rose-600' : p.balance < 0 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                        Tk {Math.abs(p.balance).toLocaleString()}
+                                    </p>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                        {p.balance > 0 ? 'Lending' : p.balance < 0 ? 'Borrowing' : 'Settled'}
+                                    </p>
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRenamingPerson({ oldName: p.name, newName: p.name });
+                                    }}
+                                    className="p-2 text-gray-300 hover:text-md-primary opacity-0 group-hover:opacity-100 transition-all active:bg-md-primary/10 rounded-full"
+                                >
+                                    <Edit2 size={16} />
+                                </button>
+                                <ChevronRight size={18} className="text-gray-300" />
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                             <div className="text-right">
-                                 <p className={`font-black text-sm ${p.balance > 0 ? 'text-rose-600' : p.balance < 0 ? 'text-emerald-600' : 'text-gray-400'}`}>
-                                     Tk {Math.abs(p.balance).toLocaleString()}
-                                 </p>
-                                 <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">
-                                     {p.balance > 0 ? 'Lent/Due' : p.balance < 0 ? 'Overpaid' : 'Settled'}
-                                 </p>
-                             </div>
-                             <button 
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRenamingPerson({ oldName: p.name, newName: p.name });
-                                }}
-                                className="p-2 text-gray-300 hover:text-md-primary opacity-0 group-hover:opacity-100 transition-all active:bg-md-primary/10 rounded-full"
-                            >
-                                <Edit2 size={16} />
-                            </button>
-                            <ChevronRight size={18} className="text-gray-300" />
-                        </div>
+
+                        {/* Balance Scale: Bi-directional bar */}
+                        {p.balance !== 0 && (
+                            <div className="relative h-2 w-full bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden flex items-center">
+                                <div className="absolute left-1/2 -translate-x-1/2 h-full w-[2px] bg-white dark:bg-zinc-900 z-10"></div>
+                                {p.balance > 0 ? (
+                                    // Lending: grows right (Rose)
+                                    <div 
+                                        className="bg-rose-500 h-full absolute left-1/2 rounded-r-full transition-all duration-500"
+                                        style={{ width: `${Math.min(50, (p.balance / maxBalance) * 50)}%` }}
+                                    ></div>
+                                ) : (
+                                    // Borrowing: grows left (Emerald)
+                                    <div 
+                                        className="bg-emerald-500 h-full absolute right-1/2 rounded-l-full transition-all duration-500"
+                                        style={{ width: `${Math.min(50, (Math.abs(p.balance) / maxBalance) * 50)}%` }}
+                                    ></div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 ))
             )}
@@ -354,7 +383,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
   const totalBalance = personTransactions.reduce((acc, t) => {
      const data = getPersonData(t);
      if (!data) return acc;
-     return acc + (data.type === 'lend' ? t.amount : -t.amount);
+     return acc + (data.type === 'give' ? t.amount : -t.amount);
   }, 0);
 
   return (
@@ -433,12 +462,12 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
             </button>
 
             <div className="bg-md-surface-container dark:bg-zinc-900 p-6 rounded-md-card shadow-sm border border-md-outline/10 text-center space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Net Outstanding: {selectedPerson}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Status: {selectedPerson}</p>
                 <h3 className={`text-4xl font-black tracking-tighter ${totalBalance > 0 ? 'text-rose-600' : totalBalance < 0 ? 'text-emerald-600' : 'text-md-on-surface dark:text-white'}`}>
                     Tk {Math.abs(totalBalance).toLocaleString()}
                 </h3>
                 <div className="inline-block px-4 py-1.5 rounded-full bg-white dark:bg-zinc-800 text-[10px] font-black uppercase tracking-widest border border-gray-100 dark:border-zinc-700 shadow-sm">
-                    {totalBalance > 0 ? 'Debt Owed to You' : totalBalance < 0 ? 'Overpaid by Contact' : 'Balance Settled'}
+                    {totalBalance > 0 ? 'Lending' : totalBalance < 0 ? 'Borrowing' : 'Balance Settled'}
                 </div>
             </div>
 
@@ -446,17 +475,17 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                 <div className="flex bg-md-surface-container dark:bg-zinc-800 p-1 rounded-full">
                     <button 
                         type="button"
-                        onClick={() => setFormMode('lend')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${formMode === 'lend' ? 'bg-md-primary text-white shadow-md' : 'text-md-on-surface-variant'}`}
+                        onClick={() => setFormMode('give')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${formMode === 'give' ? 'bg-md-primary text-white shadow-md' : 'text-md-on-surface-variant'}`}
                     >
-                        <UserMinus size={14} /> Lend / Give
+                        <ArrowUpCircle size={14} /> Give Money
                     </button>
                     <button 
                         type="button"
-                        onClick={() => setFormMode('recover')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${formMode === 'recover' ? 'bg-md-primary text-white shadow-md' : 'text-md-on-surface-variant'}`}
+                        onClick={() => setFormMode('receive')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${formMode === 'receive' ? 'bg-md-primary text-white shadow-md' : 'text-md-on-surface-variant'}`}
                     >
-                        <UserPlus size={14} /> Recover
+                        <ArrowDownCircle size={14} /> Receive Money
                     </button>
                 </div>
 
@@ -515,7 +544,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                 </div>
                 <div className="space-y-3">
                     {personTransactions.length === 0 ? (
-                        <p className="text-center py-10 text-xs font-black uppercase tracking-widest text-gray-300">No data records</p>
+                        <p className="text-center py-10 text-xs font-black uppercase tracking-widest text-gray-300">No records yet</p>
                     ) : (
                         personTransactions.map(t => {
                             const data = getPersonData(t)!;
@@ -527,11 +556,11 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                                     className="bg-white dark:bg-zinc-900 p-4 rounded-[24px] border border-gray-50 dark:border-zinc-800 shadow-sm flex items-center justify-between hover:bg-md-surface-container transition-all cursor-pointer group active:scale-[0.98]"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${data.type === 'lend' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                                            {data.type === 'lend' ? <UserMinus size={18} /> : <UserPlus size={18} />}
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${data.type === 'give' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                            {data.type === 'give' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
                                         </div>
                                         <div>
-                                            <p className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{data.type === 'lend' ? 'Money Given' : 'Money Recovered'}</p>
+                                            <p className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{data.type === 'give' ? 'Given Money' : 'Received Money'}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>
                                                     {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {acc?.name || 'Wallet'}
@@ -539,8 +568,8 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={`font-black text-sm ${data.type === 'lend' ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                        {data.type === 'lend' ? '-' : '+'} Tk {t.amount.toLocaleString()}
+                                    <p className={`font-black text-sm ${data.type === 'give' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                        {data.type === 'give' ? '-' : '+'} Tk {t.amount.toLocaleString()}
                                     </p>
                                 </div>
                             );

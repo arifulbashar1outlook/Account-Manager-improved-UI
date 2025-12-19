@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Transaction, TransactionType, Category, AccountType, Account } from '../types';
-import { AlertCircle, ArrowRightLeft, Landmark, Check, Wallet, Mic, Sparkles, Loader2, Wand2 } from 'lucide-react';
+import { AlertCircle, ArrowRightLeft, Landmark, Check, Wallet, Mic, Sparkles, Loader2, Wand2, Tag } from 'lucide-react';
 import { parseNaturalLanguage } from '../services/geminiService';
+import VoiceWaveform from './VoiceWaveform';
 
 interface TransactionFormProps {
   onAddTransaction: (t: Omit<Transaction, 'id'>) => void;
@@ -32,12 +33,14 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction, acc
   const [targetAccountId, setTargetAccountId] = useState<AccountType>(accounts[1]?.id || accounts[0]?.id || '');
   const [error, setError] = useState<string | null>(null);
 
+  const selectedAccount = useMemo(() => accounts.find(a => a.id === accountId), [accounts, accountId]);
+
   const filteredTargetAccounts = useMemo(() => {
     return accounts.filter(a => a.id !== accountId);
   }, [accounts, accountId]);
 
   const startListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitRecognition;
     if (!SpeechRecognition) {
       alert("Voice recognition not supported in this browser.");
       return;
@@ -144,52 +147,58 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction, acc
 
   return (
     <div className="space-y-6">
-      {/* AI Natural Language Input */}
-      <div className="bg-md-primary-container p-4 rounded-[28px] border border-md-primary/10 shadow-sm space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-md-primary" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-md-on-primary-container">Smart Entry</span>
-          </div>
-          <p className="text-[8px] font-bold text-md-primary/60 uppercase">Speak or Type naturally</p>
+      {/* AI Smart Entry Card with Mesh Gradient */}
+      <div className="mesh-gradient-ai p-5 rounded-[32px] border border-white/20 shadow-xl space-y-4 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity animate-mesh">
+           <Sparkles size={100} />
         </div>
-        <div className="flex gap-2">
+        <div className="relative z-10 flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md border border-white/10"><Sparkles size={14} className="text-white" /></div>
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/90">Smart Entry</span>
+          </div>
+          <p className="text-[8px] font-bold text-white/60 uppercase tracking-widest">Powered by Gemini</p>
+        </div>
+        <div className="relative z-10 flex gap-3 items-center">
           <div className="relative flex-1">
             <input 
               type="text"
               value={aiInput}
               onChange={e => setAiInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAiProcess()}
-              placeholder="e.g. Spent 200 on breakfast from Cash"
-              className="w-full px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl text-xs font-bold outline-none pr-10 shadow-inner"
+              placeholder="e.g. Lunch for 350 using EBL"
+              className="w-full px-5 py-4 bg-white/10 backdrop-blur-xl rounded-[20px] text-xs font-semibold text-white placeholder-white/40 outline-none border border-white/10 focus:bg-white/20 transition-all shadow-inner"
             />
             {isAiProcessing ? (
-              <Loader2 className="absolute right-3 top-3 animate-spin text-md-primary" size={18} />
+              <Loader2 className="absolute right-4 top-4 animate-spin text-white" size={18} />
             ) : (
-              <button onClick={() => handleAiProcess()} className="absolute right-3 top-3 text-md-primary active:scale-90 transition-all">
+              <button onClick={() => handleAiProcess()} className="absolute right-4 top-4 text-white/60 hover:text-white active:scale-90 transition-all">
                 <Wand2 size={18} />
               </button>
             )}
           </div>
-          <button 
-            type="button"
-            onClick={startListening}
-            className={`w-12 h-12 flex items-center justify-center rounded-2xl shadow-md transition-all active:scale-90 ${isListening ? 'bg-rose-500 animate-pulse text-white' : 'bg-md-primary text-white'}`}
-          >
-            <Mic size={20} />
-          </button>
+          <div className="relative">
+             {isListening && <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md rounded-full px-2 py-1"><VoiceWaveform isListening={isListening} /></div>}
+             <button 
+                type="button"
+                onClick={startListening}
+                className={`w-14 h-14 flex items-center justify-center rounded-[20px] shadow-lg transition-all active:scale-90 border border-white/20 ${isListening ? 'bg-rose-500 animate-pulse text-white' : 'bg-white text-md-primary'}`}
+              >
+                <Mic size={22} />
+              </button>
+          </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-md-card border border-gray-100 dark:border-zinc-800 shadow-sm">
-        <div className="flex bg-md-surface-container p-1 rounded-full overflow-x-auto no-scrollbar">
+      <form onSubmit={handleSubmit} className="glass p-6 rounded-md-card shadow-sm space-y-6 border border-black/5 dark:border-white/5">
+        <div className="flex bg-md-primary/5 dark:bg-black/20 p-1.5 rounded-full overflow-x-auto no-scrollbar border border-black/5">
           {['expense', 'transfer', 'withdraw'].map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setType(t as any)}
-              className={`flex-1 py-2 px-3 text-[10px] font-black rounded-full transition-all uppercase tracking-widest whitespace-nowrap ${
-                type === t ? 'bg-md-primary text-white shadow-md' : 'text-md-on-surface-variant'
+              className={`flex-1 py-2.5 px-4 text-[9px] font-black rounded-full transition-all uppercase tracking-[0.2em] whitespace-nowrap ${
+                type === t ? 'bg-md-primary text-white shadow-lg scale-105' : 'text-md-on-surface-variant opacity-60 hover:bg-white/40 dark:hover:bg-zinc-800/40'
               }`}
             >
               {t}
@@ -198,117 +207,130 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction, acc
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/40 rounded-xl flex items-center gap-2 text-xs font-bold text-red-600 dark:text-red-400">
-             <AlertCircle size={14} />
+          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-xs font-semibold text-rose-600 dark:text-rose-400 animate-in shake">
+             <AlertCircle size={16} />
              {error}
           </div>
         )}
 
         <div className="space-y-5">
           <div className="relative">
-            <label className="text-[10px] font-bold text-md-primary uppercase absolute -top-2 left-3 bg-white dark:bg-zinc-900 px-1 z-10">Amount</label>
-            <div className="flex items-center border-2 border-md-outline/20 rounded-2xl focus-within:border-md-primary px-4 py-4 transition-all">
-              <span className="text-gray-400 font-bold mr-2">Tk</span>
+            <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary/60 ml-3 mb-1.5 block">Amount (BDT)</label>
+            <div className="flex items-center glass-input bg-white/40 dark:bg-black/10 border border-black/5 dark:border-white/5 rounded-2xl px-5 py-5 transition-all focus-within:ring-2 focus-within:ring-md-primary/20">
+              <span className="text-gray-400 font-bold mr-2 opacity-50">Tk</span>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-transparent outline-none text-2xl font-black"
+                className="w-full bg-transparent outline-none text-3xl font-black tracking-tighter"
                 placeholder="0.00"
                 required
               />
             </div>
           </div>
 
-          {type === 'expense' ? (
-            <div className="grid grid-cols-2 gap-4">
-               <div className="relative">
-                 <label className="text-[10px] font-bold text-md-primary uppercase absolute -top-2 left-3 bg-white dark:bg-zinc-900 px-1 z-10">Pay From</label>
-                 <select
-                    value={accountId}
-                    onChange={(e) => setAccountId(e.target.value)}
-                    className="w-full px-4 py-4 bg-transparent border-2 border-md-outline/20 rounded-2xl focus:border-md-primary outline-none appearance-none font-black text-sm"
-                  >
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-               </div>
-               <div className="relative">
-                 <label className="text-[10px] font-bold text-md-primary uppercase absolute -top-2 left-3 bg-white dark:bg-zinc-900 px-1 z-10">Category</label>
-                 <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-4 bg-transparent border-2 border-md-outline/20 rounded-2xl focus:border-md-primary outline-none appearance-none font-black text-sm"
-                  >
-                    {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-               </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 p-4 bg-md-surface-container rounded-3xl border border-dashed border-md-outline/30">
-               <div className="relative">
-                  <label className="text-[10px] font-bold text-md-primary uppercase mb-1.5 block ml-1">From Account</label>
-                  <select
-                      value={accountId}
-                      onChange={(e) => setAccountId(e.target.value)}
-                      className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border border-md-outline/20 rounded-xl outline-none font-black text-sm appearance-none"
-                  >
-                      {accounts.filter(a => type === 'withdraw' ? a.id !== (cashAccount?.id || 'cash') : true).map(a => (
-                        <option key={a.id} value={a.id}>{a.name}</option>
-                      ))}
-                  </select>
-               </div>
-               <div className="flex justify-center -my-2">
-                  <div className="bg-white dark:bg-zinc-800 p-2 rounded-full border shadow-sm">
-                     <ArrowRightLeft size={16} className="text-md-primary rotate-90" />
-                  </div>
-               </div>
-               <div className="relative">
-                  <label className="text-[10px] font-bold text-md-primary uppercase mb-1.5 block ml-1">To Account</label>
-                  {type === 'withdraw' ? (
-                    <div className="w-full px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl font-black text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                      <Wallet size={16} /> {cashAccount?.name || 'Cash Wallet'}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {type === 'expense' ? (
+                <>
+                  <div className="relative">
+                    <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary/60 ml-3 mb-1.5 block">Source Wallet</label>
+                    <div className="relative">
+                      <select
+                        value={accountId}
+                        onChange={(e) => setAccountId(e.target.value)}
+                        className="w-full px-5 py-4 bg-white/40 dark:bg-black/10 border border-black/5 dark:border-white/5 rounded-2xl font-bold text-sm outline-none appearance-none focus:ring-2 focus:ring-md-primary/20"
+                      >
+                        {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                      <ArrowRightLeft className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 opacity-40 pointer-events-none rotate-90" size={14} />
                     </div>
-                  ) : (
-                    <select
-                        value={targetAccountId}
-                        onChange={(e) => setTargetAccountId(e.target.value)}
-                        className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border border-md-outline/20 rounded-xl outline-none font-black text-sm appearance-none"
-                    >
-                        {filteredTargetAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
-                  )}
-               </div>
-            </div>
-          )}
+                  </div>
+                  <div className="relative">
+                    <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary/60 ml-3 mb-1.5 block">Category</label>
+                    <div className="relative">
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-5 py-4 bg-white/40 dark:bg-black/10 border border-black/5 dark:border-white/5 rounded-2xl font-bold text-sm outline-none appearance-none focus:ring-2 focus:ring-md-primary/20"
+                      >
+                        {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <Tag className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 opacity-40 pointer-events-none" size={14} />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 p-5 bg-black/5 dark:bg-black/20 rounded-[32px] border border-dashed border-black/10 dark:border-white/10">
+                   <div className="relative">
+                      <label className="text-[9px] font-medium uppercase tracking-widest text-md-primary mb-2 block ml-1 opacity-60">From Wallet</label>
+                      <select
+                          value={accountId}
+                          onChange={(e) => setAccountId(e.target.value)}
+                          className="w-full px-5 py-3.5 bg-white dark:bg-zinc-800 border-none rounded-2xl outline-none font-bold text-sm appearance-none shadow-sm"
+                      >
+                          {accounts.filter(a => type === 'withdraw' ? a.id !== (cashAccount?.id || 'cash') : true).map(a => (
+                            <option key={a.id} value={a.id}>{a.name}</option>
+                          ))}
+                      </select>
+                   </div>
+                   <div className="flex justify-center -my-3 z-10">
+                      <div className="bg-white dark:bg-zinc-800 p-2.5 rounded-full border border-black/5 shadow-md scale-110">
+                         <ArrowRightLeft size={16} className="text-md-primary rotate-90" />
+                      </div>
+                   </div>
+                   <div className="relative">
+                      <label className="text-[9px] font-medium uppercase tracking-widest text-md-primary mb-2 block ml-1 opacity-60">To Wallet</label>
+                      {type === 'withdraw' ? (
+                        <div className="w-full px-5 py-3.5 bg-emerald-500/10 border border-emerald-500/10 rounded-2xl font-bold text-sm flex items-center gap-2 text-emerald-600 dark:text-emerald-400 shadow-inner">
+                          <Wallet size={16} /> {cashAccount?.name || 'Cash Wallet'}
+                        </div>
+                      ) : (
+                        <select
+                            value={targetAccountId}
+                            onChange={(e) => setTargetAccountId(e.target.value)}
+                            className="w-full px-5 py-3.5 bg-white dark:bg-zinc-800 border-none rounded-2xl outline-none font-bold text-sm appearance-none shadow-sm"
+                        >
+                            {filteredTargetAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
+                      )}
+                   </div>
+                </div>
+              )}
+          </div>
 
           <div className="relative">
-            <label className="text-[10px] font-bold text-md-primary uppercase absolute -top-2 left-3 bg-white dark:bg-zinc-900 px-1 z-10">Description</label>
+            <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary/60 ml-3 mb-1.5 block">Description</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-4 bg-transparent border-2 border-md-outline/20 rounded-2xl focus:border-md-primary outline-none font-bold"
-              placeholder={type === 'withdraw' ? 'ATM Withdrawal' : 'e.g. Lunch, Grocery'}
+              className="w-full px-5 py-4 bg-white/40 dark:bg-black/10 border border-black/5 dark:border-white/5 rounded-2xl outline-none font-semibold text-sm focus:ring-2 focus:ring-md-primary/20"
+              placeholder={type === 'withdraw' ? 'ATM Withdrawal' : 'What was this for?'}
             />
           </div>
 
           <div className="relative">
-            <label className="text-[10px] font-bold text-md-primary uppercase absolute -top-2 left-3 bg-white dark:bg-zinc-900 px-1 z-10">Date</label>
+            <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary/60 ml-3 mb-1.5 block">Transaction Date</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-4 bg-transparent border-2 border-md-outline/20 rounded-2xl focus:border-md-primary outline-none font-black text-sm"
+              className="w-full px-5 py-4 bg-white/40 dark:bg-black/10 border border-black/5 dark:border-white/5 rounded-2xl outline-none font-bold text-sm focus:ring-2 focus:ring-md-primary/20"
             />
           </div>
         </div>
 
+        {/* Wallet Color Sync: Dynamic button glow/shadow */}
         <button
           type="submit"
-          className="w-full bg-md-primary text-white font-black py-5 rounded-[20px] shadow-lg hover:shadow-xl active:scale-95 transition-all text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+          style={{ 
+            backgroundColor: selectedAccount?.color || '#6750A4',
+            boxShadow: `0 8px 24px ${selectedAccount?.color ? selectedAccount.color + '40' : 'rgba(103, 80, 164, 0.4)'}`
+          }}
+          className="w-full text-white font-black py-5 rounded-[24px] hover:shadow-2xl active:scale-95 transition-all text-[11px] uppercase tracking-[0.25em] flex items-center justify-center gap-3 border border-white/20"
         >
-          {type === 'withdraw' ? <Landmark size={18} /> : (type === 'transfer' ? <ArrowRightLeft size={18} /> : <Check size={18} />)}
-          Confirm Transaction
+          {type === 'withdraw' ? <Landmark size={20} /> : (type === 'transfer' ? <ArrowRightLeft size={20} /> : <Check size={20} />)}
+          Log Transaction
         </button>
       </form>
     </div>
