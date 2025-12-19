@@ -13,11 +13,9 @@ import {
   ChevronUp,
   Settings2,
   ListOrdered,
-  ListPlus,
   ShoppingBag,
   Camera,
   Loader2,
-  Sparkles,
   Zap
 } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
@@ -54,7 +52,7 @@ const BazarView: React.FC<BazarViewProps> = ({
         return localTime.toISOString().slice(0, 16);
     };
 
-    // Prioritize 'cash' wallet by ID or name
+    // Prioritize 'cash' wallet as default
     const defaultCash = accounts.find(a => a.id === 'cash')?.id || 
                       accounts.find(a => a.name.toLowerCase().includes('cash'))?.id || 
                       accounts[0]?.id || '';
@@ -117,14 +115,11 @@ const BazarView: React.FC<BazarViewProps> = ({
                             }
                         }
                     });
-                    alert(`AI processed ${items.length} items from receipt.`);
-                } else {
-                    alert("Gemini couldn't find any items. Try a clearer photo.");
                 }
             };
             reader.readAsDataURL(file);
         } catch (err) {
-            alert("Error scanning receipt. Please check connection.");
+            console.error(err);
         } finally {
             setIsScanning(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -272,7 +267,6 @@ const BazarView: React.FC<BazarViewProps> = ({
             {isCurrentCalendarMonth && (
                 <>
                     <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
-                    
                     {isScanning && (
                       <div className="bg-md-primary p-4 rounded-[24px] text-white flex items-center gap-4 shadow-lg animate-pulse">
                         <Loader2 className="animate-spin" size={20} />
@@ -282,15 +276,10 @@ const BazarView: React.FC<BazarViewProps> = ({
                         </div>
                       </div>
                     )}
-
                     {/* Entry Form */}
                     <form onSubmit={handleQuickAdd} className="glass p-3 rounded-[24px] shadow-sm space-y-3">
                         <div className="grid grid-cols-[44px_1fr_80px_44px] gap-2 items-center">
-                            <button 
-                              type="button" 
-                              onClick={() => fileInputRef.current?.click()}
-                              className="bg-md-primary/10 text-md-primary rounded-xl h-11 w-full flex items-center justify-center active:scale-90 transition-all"
-                            >
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-md-primary/10 text-md-primary rounded-xl h-11 w-full flex items-center justify-center active:scale-90 transition-all">
                                 <Camera size={22} />
                             </button>
                             <input ref={itemInputRef} type="text" value={item} onChange={e => { setItem(e.target.value); if (processingIndex !== null) setProcessingIndex(null); }} placeholder="Item name" className="px-4 py-2 bg-black/5 dark:bg-white/5 rounded-xl font-semibold text-xs outline-none h-11 w-full dark:text-white" required />
@@ -307,7 +296,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                         </div>
                     </form>
 
-                    {/* Shopping List (Moved on top of Quick Pick) */}
+                    {/* Shopping List */}
                     <div className="glass rounded-[24px] shadow-sm overflow-hidden">
                         <div className="flex items-center justify-between px-5 py-3 cursor-pointer" onClick={() => setIsToBuyExpanded(!isToBuyExpanded)}>
                             <div className="flex items-center gap-2">
@@ -331,10 +320,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                                     <span className="text-[10px] font-black text-md-primary/40 min-w-[20px]">{idx + 1}.</span>
                                                     <span className="text-sm font-semibold text-md-on-surface dark:text-gray-200">{itemName}</span>
                                                 </div>
-                                                <button 
-                                                    onClick={e => { e.stopPropagation(); removeFromToBuy(idx); }} 
-                                                    className="p-1.5 text-gray-400 hover:text-rose-500 active:bg-rose-50 rounded-full"
-                                                >
+                                                <button onClick={e => { e.stopPropagation(); removeFromToBuy(idx); }} className="p-1.5 text-gray-400 hover:text-rose-500 active:bg-rose-50 rounded-full">
                                                     <X size={18} />
                                                 </button>
                                             </div>
@@ -345,7 +331,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                         )}
                     </div>
 
-                    {/* Quick Pick (Templates) */}
+                    {/* Quick Pick */}
                     <div className="glass rounded-[24px] shadow-sm overflow-hidden transition-all">
                         <div className="flex items-center justify-between px-5 py-3 cursor-pointer" onClick={() => setIsPickListExpanded(!isPickListExpanded)}>
                             <div className="flex items-center gap-2">
@@ -353,10 +339,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                 <h4 className="font-medium text-[10px] uppercase tracking-[0.2em] text-md-on-surface-variant opacity-60">Quick Pick</h4>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); setIsManagingTemplates(!isManagingTemplates); }}
-                                    className={`p-1.5 rounded-lg transition-colors ${isManagingTemplates ? 'bg-md-primary text-white' : 'text-md-primary hover:bg-black/5'}`}
-                                >
+                                <button onClick={(e) => { e.stopPropagation(); setIsManagingTemplates(!isManagingTemplates); }} className={`p-1.5 rounded-lg transition-colors ${isManagingTemplates ? 'bg-md-primary text-white' : 'text-md-primary hover:bg-black/5'}`}>
                                     <Settings2 size={14} />
                                 </button>
                                 {isPickListExpanded ? <ChevronUp size={14} className="opacity-40" /> : <ChevronDown size={14} className="opacity-40" />}
@@ -366,23 +349,14 @@ const BazarView: React.FC<BazarViewProps> = ({
                             <div className="px-4 pb-4 animate-in slide-in-from-top-1">
                                 {isManagingTemplates && (
                                     <div className="flex gap-2 mb-4 p-2 bg-black/5 dark:bg-white/5 rounded-xl animate-in zoom-in-95">
-                                        <input 
-                                            type="text" 
-                                            value={newTemplate} 
-                                            onChange={e => setNewTemplate(e.target.value)}
-                                            placeholder="Add custom item..." 
-                                            className="flex-1 bg-transparent border-none outline-none text-xs font-semibold px-2 dark:text-white"
-                                        />
+                                        <input type="text" value={newTemplate} onChange={e => setNewTemplate(e.target.value)} placeholder="Add custom item..." className="flex-1 bg-transparent border-none outline-none text-xs font-semibold px-2 dark:text-white" />
                                         <button onClick={addTemplate} className="p-2 bg-md-primary text-white rounded-lg active:scale-90"><Plus size={16} /></button>
                                     </div>
                                 )}
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     {templates.map(name => (
                                         <div key={name} className="relative group">
-                                            <button 
-                                                onClick={() => handlePickListClick(name)}
-                                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${toBuyList.includes(name) ? 'bg-md-primary/10 border-md-primary text-md-primary' : 'bg-black/5 border-transparent text-md-on-surface-variant hover:bg-black/10 dark:text-gray-300 dark:bg-white/5'}`}
-                                            >
+                                            <button onClick={() => handlePickListClick(name)} className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${toBuyList.includes(name) ? 'bg-md-primary/10 border-md-primary text-md-primary' : 'bg-black/5 border-transparent text-md-on-surface-variant hover:bg-black/10 dark:text-gray-300 dark:bg-white/5'}`}>
                                                 {name}
                                             </button>
                                             {isManagingTemplates && (
@@ -440,11 +414,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                                     {session.items.map(t => {
                                                         const acc = accounts.find(a => a.id === t.accountId);
                                                         return (
-                                                            <SwipeableItem 
-                                                              key={t.id}
-                                                              onDelete={() => onDeleteTransaction(t.id)}
-                                                              onEdit={() => startEditing(t)}
-                                                            >
+                                                          <SwipeableItem key={t.id} onEdit={() => startEditing(t)}>
                                                               <div onClick={() => startEditing(t)} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                                                   <div className="space-y-0.5">
                                                                       <p className="font-semibold text-sm dark:text-white leading-tight">{t.description}</p>
@@ -452,7 +422,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                                                   </div>
                                                                   <p className="font-black text-sm text-md-on-surface dark:text-white">Tk {t.amount.toLocaleString()}</p>
                                                               </div>
-                                                            </SwipeableItem>
+                                                          </SwipeableItem>
                                                         );
                                                     })}
                                                 </div>
