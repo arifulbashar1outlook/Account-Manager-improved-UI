@@ -192,7 +192,7 @@ const BazarView: React.FC<BazarViewProps> = ({
       }> = {};
       bazarTransactions.forEach(t => {
         const dayKey = t.date.split('T')[0];
-        const timeKey = t.date; 
+        const timeKey = t.date; // Unique timestamp
         if (!days[dayKey]) days[dayKey] = { dailyTotal: 0, sessions: {} };
         if (!days[dayKey].sessions[timeKey]) days[dayKey].sessions[timeKey] = { items: [], sessionTotal: 0 };
         days[dayKey].dailyTotal += t.amount;
@@ -335,6 +335,9 @@ const BazarView: React.FC<BazarViewProps> = ({
                 </div>
                 {sortedDays.map(dayKey => {
                     const dayData = groupedStructure[dayKey];
+                    // Sort sessions within the day by time (newest session at top)
+                    const sessionKeys = Object.keys(dayData.sessions).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+                    
                     return (
                         <div key={dayKey} className="space-y-6">
                             <div className="flex justify-between items-center px-4 sticky top-[72px] z-10 bg-md-surface/80 dark:bg-zinc-950/80 backdrop-blur-md py-3 rounded-2xl shadow-sm border border-black/5">
@@ -344,17 +347,46 @@ const BazarView: React.FC<BazarViewProps> = ({
                                 </div>
                                 <p className="text-xl font-black text-rose-600">Tk {dayData.dailyTotal.toLocaleString()}</p>
                             </div>
-                            <div className="space-y-4">
-                                {Object.keys(dayData.sessions).map(timeKey => (
-                                    <div key={timeKey} className="bg-white dark:bg-zinc-900 rounded-[32px] overflow-hidden border shadow-sm">
-                                        {dayData.sessions[timeKey].items.map(t => (
-                                            <div key={t.id} onClick={() => startEditing(t)} className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50">
-                                                <p className="font-black text-sm">{t.description}</p>
-                                                <p className="font-black text-sm text-rose-600">Tk {t.amount.toLocaleString()}</p>
+                            
+                            <div className="space-y-6">
+                                {sessionKeys.map(timeKey => {
+                                    const session = dayData.sessions[timeKey];
+                                    const sessionTime = new Date(timeKey).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    
+                                    return (
+                                        <div key={timeKey} className="bg-white dark:bg-zinc-900 rounded-[32px] overflow-hidden border border-gray-100 dark:border-zinc-800 shadow-sm">
+                                            {/* Session Header (Sum & Time) */}
+                                            <div className="px-4 py-3 bg-md-surface-container dark:bg-zinc-800/50 flex justify-between items-center border-b border-gray-100 dark:border-zinc-800">
+                                                <div className="flex items-center gap-2 opacity-60">
+                                                    <Clock size={12} className="text-md-primary" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">{sessionTime}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.15em] opacity-40">Session:</span>
+                                                    <span className="text-xs font-black text-md-primary">Tk {session.sessionTotal.toLocaleString()}</span>
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                ))}
+
+                                            {/* Session Items */}
+                                            <div className="divide-y divide-gray-50 dark:divide-zinc-800/50">
+                                                {session.items.map(t => (
+                                                    <div key={t.id} onClick={() => startEditing(t)} className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition-colors">
+                                                        <div className="flex flex-col">
+                                                            <p className="font-black text-sm">{t.description}</p>
+                                                            {/* Show account if it's not the default cash */}
+                                                            {t.accountId !== defaultCash && accounts.find(a => a.id === t.accountId) && (
+                                                                <span className="text-[8px] font-black uppercase tracking-widest opacity-40 mt-0.5" style={{ color: accounts.find(a => a.id === t.accountId)?.color }}>
+                                                                    {accounts.find(a => a.id === t.accountId)?.name}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="font-black text-sm text-rose-600">Tk {t.amount.toLocaleString()}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     );
