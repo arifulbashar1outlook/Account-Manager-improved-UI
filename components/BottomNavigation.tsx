@@ -64,9 +64,6 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, active, onClick })
         active ? 'bg-md-primary/10 text-md-primary' : 'text-md-on-surface-variant'
       }`}>
         <Icon className={`w-5 h-5 transition-transform duration-300 ${active ? 'scale-110 stroke-[2.5px]' : 'group-hover:scale-110'}`} />
-        {active && (
-           <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-md-primary rounded-full animate-in zoom-in duration-300 shadow-[0_0_8px_rgba(103,80,164,0.3)]"></div>
-        )}
       </div>
       <span className={`text-[8px] mt-0.5 font-black uppercase tracking-tighter transition-colors ${
         active ? 'text-md-primary' : 'text-md-on-surface-variant opacity-70'

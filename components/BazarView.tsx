@@ -14,7 +14,6 @@ import {
   Settings2,
   ListOrdered,
   ListPlus,
-  // Added missing ShoppingBag icon
   ShoppingBag
 } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
@@ -218,13 +217,13 @@ const BazarView: React.FC<BazarViewProps> = ({
          <div className="px-4 mt-4 space-y-3">
             {isCurrentCalendarMonth && (
                 <>
-                    {/* Compact Entry Form */}
-                    <form onSubmit={handleQuickAdd} className="bg-white dark:bg-zinc-900 p-2 rounded-[20px] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-1.5">
-                        <div className="flex gap-1.5">
-                            <input ref={itemInputRef} type="text" value={item} onChange={e => { setItem(e.target.value); if (processingIndex !== null) setProcessingIndex(null); }} placeholder="Item name" className="flex-[2.5] px-3 py-2 bg-md-surface-container dark:bg-zinc-800 rounded-xl font-bold text-xs outline-none h-8" required />
-                            <input ref={priceInputRef} type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Tk" className="flex-1 px-3 py-2 bg-md-surface-container dark:bg-zinc-800 rounded-xl font-[800] text-xs text-rose-600 outline-none h-8" required />
-                            <button type="submit" className="bg-md-primary text-white px-3 py-1.5 rounded-xl shadow-md active:scale-95 transition-all shrink-0 h-8 flex items-center justify-center">
-                                <Plus size={16} strokeWidth={3} />
+                    {/* Compact Entry Form - Equalized row using grid for stability */}
+                    <form onSubmit={handleQuickAdd} className="bg-white dark:bg-zinc-900 p-2 rounded-[20px] border border-gray-100 dark:border-zinc-800 shadow-sm space-y-2">
+                        <div className="grid grid-cols-[1fr_1fr_42px] gap-2 items-center">
+                            <input ref={itemInputRef} type="text" value={item} onChange={e => { setItem(e.target.value); if (processingIndex !== null) setProcessingIndex(null); }} placeholder="Item name" className="px-3 py-2 bg-md-surface-container dark:bg-zinc-800 rounded-xl font-bold text-xs outline-none h-10 w-full" required />
+                            <input ref={priceInputRef} type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Tk" className="px-2 py-2 bg-md-surface-container dark:bg-zinc-800 rounded-xl font-[800] text-xs text-rose-600 outline-none h-10 w-full text-center" required />
+                            <button type="submit" className="bg-md-primary text-white rounded-xl shadow-md active:scale-95 transition-all h-10 w-full flex items-center justify-center">
+                                <Plus size={20} strokeWidth={3} />
                             </button>
                         </div>
                         <div className="flex justify-between items-center px-1">
@@ -235,25 +234,36 @@ const BazarView: React.FC<BazarViewProps> = ({
                         </div>
                     </form>
 
-                    {/* Shopping List with Serial Numbers */}
+                    {/* Shopping List - Organized Vertically with better readability */}
                     <div className="bg-white dark:bg-zinc-900 rounded-[20px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden">
                         <div className="flex items-center justify-between px-4 py-2 cursor-pointer" onClick={() => setIsToBuyExpanded(!isToBuyExpanded)}>
                             <div className="flex items-center gap-2">
                                 <ListOrdered size={14} className="text-md-primary" />
                                 <h4 className="font-black text-[9px] uppercase tracking-widest text-md-on-surface-variant">Shopping List</h4>
-                                {toBuyList.length > 0 && <span className="bg-md-primary text-white text-[8px] px-1.5 py-0.5 rounded-full">{toBuyList.length}</span>}
+                                {toBuyList.length > 0 && <span className="bg-md-primary text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">{toBuyList.length}</span>}
                             </div>
                             {isToBuyExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </div>
                         {isToBuyExpanded && (
                             <div className="px-3 pb-3 animate-in slide-in-from-top-1">
                                 {toBuyList.length === 0 ? <p className="text-[9px] text-center opacity-30 font-black py-4 uppercase tracking-widest">Empty</p> : 
-                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                    <div className="flex flex-col gap-1.5 pt-1">
                                         {toBuyList.map((itemName, idx) => (
-                                            <div key={`${itemName}-${idx}`} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl bg-md-surface-container dark:bg-zinc-800 border border-black/5 active:scale-95 transition-all ${processingIndex === idx ? 'ring-1 ring-md-primary' : ''}`} onClick={() => handleToBuyItemClick(itemName, idx)}>
-                                                <span className="text-[9px] font-black text-md-primary/50">{idx + 1}.</span>
-                                                <span className="text-[11px] font-[600]">{itemName}</span>
-                                                <button onClick={e => { e.stopPropagation(); removeFromToBuy(idx); }} className="text-gray-400 hover:text-rose-500"><X size={12} /></button>
+                                            <div 
+                                                key={`${itemName}-${idx}`} 
+                                                className={`flex items-center justify-between px-4 py-3 rounded-xl bg-md-surface-container dark:bg-zinc-800 border border-black/5 active:scale-95 transition-all cursor-pointer ${processingIndex === idx ? 'ring-2 ring-md-primary bg-md-primary/5' : ''}`} 
+                                                onClick={() => handleToBuyItemClick(itemName, idx)}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-black text-md-primary/60 min-w-[20px]">{idx + 1}.</span>
+                                                    <span className="text-sm font-bold text-md-on-surface dark:text-gray-200">{itemName}</span>
+                                                </div>
+                                                <button 
+                                                    onClick={e => { e.stopPropagation(); removeFromToBuy(idx); }} 
+                                                    className="p-1.5 text-gray-400 hover:text-rose-500 active:bg-rose-50 rounded-full"
+                                                >
+                                                    <X size={16} />
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
@@ -292,7 +302,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                 )}
                                 <div className="flex flex-wrap gap-1.5">
                                     {templates.map(itemName => (
-                                        <button key={itemName} type="button" onClick={() => handlePickListClick(itemName)} className={`px-2 py-1 border rounded-lg text-[9px] font-black uppercase tracking-tight transition-all active:scale-95 ${toBuyList.includes(itemName) ? 'bg-md-primary/10 text-md-primary border-md-primary/30' : 'bg-white dark:bg-zinc-900 text-md-on-surface'}`}>
+                                        <button key={itemName} type="button" onClick={() => handlePickListClick(itemName)} className={`px-4 py-2.5 border rounded-xl text-[14px] font-black uppercase tracking-tight transition-all active:scale-95 ${toBuyList.includes(itemName) ? 'bg-md-primary/10 text-md-primary border-md-primary/30' : 'bg-white dark:bg-zinc-900 text-md-on-surface'}`}>
                                             {itemName}
                                         </button>
                                     ))}
@@ -321,7 +331,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                         
                         return (
                             <div key={dayKey} className="space-y-3">
-                                <div className="flex justify-between items-center px-4 sticky top-[76px] z-10 bg-md-surface/90 dark:bg-zinc-950/90 backdrop-blur-md py-2.5 rounded-2xl shadow-sm border border-black/5">
+                                <div className="flex justify-between items-center px-4 sticky top-[96px] z-10 bg-md-surface/90 dark:bg-zinc-950/90 backdrop-blur-md py-2.5 rounded-2xl shadow-sm border border-black/5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-7 h-7 rounded-lg bg-md-primary flex items-center justify-center text-white shadow-sm"><CalendarDays size={14} /></div>
                                         <p className="text-[11px] font-black uppercase">{new Date(dayKey).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</p>

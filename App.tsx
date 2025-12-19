@@ -41,11 +41,18 @@ const useKeyboardVisibility = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const handleResize = () => {
-      const isVisible = window.visualViewport ? window.visualViewport.height < window.innerHeight * 0.85 : false;
-      setKeyboardVisible(isVisible);
+      // Improved logic for mobile keyboards: check visual viewport against window innerHeight
+      const viewport = window.visualViewport;
+      if (viewport) {
+        setKeyboardVisible(viewport.height < window.innerHeight * 0.85);
+      }
     };
     window.visualViewport?.addEventListener('resize', handleResize);
-    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
   return isKeyboardVisible;
 };
@@ -180,24 +187,23 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-md-surface dark:bg-zinc-950 pb-32 transition-colors">
-      {/* Restored Native Android Header with Background */}
-      <header className="sticky top-0 z-50 bg-md-primary px-4 pt-safe flex items-center justify-between shadow-lg h-[76px]">
+      <header className="sticky top-0 z-50 bg-md-primary px-4 pt-safe flex items-center justify-between shadow-lg h-[96px]">
           <div className="flex items-center gap-3.5">
-            <div className="bg-white/20 p-2 rounded-2xl text-white shadow-sm backdrop-blur-md border border-white/10">
-              <LayoutDashboard size={22} strokeWidth={2.5} />
+            <div className="bg-white/20 p-2.5 rounded-2xl text-white shadow-sm backdrop-blur-md border border-white/10">
+              <LayoutDashboard size={24} strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-[19px] font-[800] tracking-tight text-white leading-none">Account Manager</h1>
-              <div className="flex items-center gap-1.5 mt-1.5 opacity-80">
+              <h1 className="text-[20px] font-[800] tracking-tight text-white leading-none">Account Manager</h1>
+              <div className="flex items-center gap-1.5 mt-1 opacity-80">
                 <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-white">{syncStatus === 'syncing' ? 'Syncing...' : 'Local Active'}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-white">{syncStatus === 'syncing' ? 'Syncing...' : 'System Active'}</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-0.5">
-            <button onClick={() => triggerAutoPush()} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-all active:scale-90"><CloudUpload size={20}/></button>
-            <button onClick={() => handleSyncPull()} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-all active:scale-90"><RotateCw size={20}/></button>
-            <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors active:scale-90"><Menu size={24}/></button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => triggerAutoPush()} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-all active:scale-90"><CloudUpload size={22}/></button>
+            <button onClick={() => handleSyncPull()} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-all active:scale-90"><RotateCw size={22}/></button>
+            <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors active:scale-90"><Menu size={26}/></button>
           </div>
       </header>
 
@@ -274,7 +280,7 @@ const App: React.FC = () => {
         {activeTab === 'sync-setup' && <SyncView onBack={() => setActiveTab('dashboard')} onPullData={handleSyncPull} />}
       </main>
 
-      {!isKeyboardVisible && activeTab === 'dashboard' && (
+      {!isKeyboardVisible && (activeTab === 'dashboard' || activeTab === 'bazar') && (
         <button onClick={() => setActiveTab('input')} className="fixed bottom-[100px] right-6 w-16 h-16 bg-md-primary text-white rounded-[24px] shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40">
           <Plus size={32} strokeWidth={3} />
         </button>
