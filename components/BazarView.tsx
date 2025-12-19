@@ -52,7 +52,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     const [dateTime, setDateTime] = useState(getLocalDateTime());
     const [viewDate, setViewDate] = useState(new Date());
 
-    // UI States for folding sections
+    // Foldable State
     const [isPickListExpanded, setIsPickListExpanded] = useState(true);
     const [isToBuyExpanded, setIsToBuyExpanded] = useState(true);
 
@@ -112,8 +112,8 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     const handleQuickAdd = (e?: React.FormEvent) => {
       if (e) e.preventDefault();
       
-      // Mandatory field check
-      if(!item || !amount || parseFloat(amount) <= 0) {
+      // Mandatory check: both item and price (amount) must exist
+      if(!item.trim() || !amount || parseFloat(amount) <= 0) {
         return;
       }
       
@@ -121,7 +121,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
       const finalAmount = parseFloat(amount);
 
       onAddTransaction({
-        description: item,
+        description: item.trim(),
         amount: finalAmount,
         type: 'expense',
         category: Category.BAZAR,
@@ -140,7 +140,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
       setItem('');
       setAmount('');
       
-      // Return focus to item input for next entry
+      // Refocus the item input for the next entry
       if (itemInputRef.current) {
           itemInputRef.current.focus();
       }
@@ -148,20 +148,21 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     const handlePickListClick = (name: string) => {
         if (!toBuyList.includes(name)) {
-            setToBuyList([...toBuyList, name]);
-            setIsToBuyExpanded(true); // Auto-expand when adding to shopping list
+            const newList = [...toBuyList, name];
+            setToBuyList(newList);
+            setIsToBuyExpanded(true); // Auto-expand when adding
         }
     };
 
     const handleToBuyItemClick = (name: string, index: number) => {
         setItem(name);
         setProcessingIndex(index);
-        // Delay focus slightly to ensure the keyboard pops up correctly on mobile
+        // Force browser to focus price input
         setTimeout(() => {
           if (priceInputRef.current) {
             priceInputRef.current.focus();
           }
-        }, 100);
+        }, 150);
     };
 
     const removeFromToBuy = (index: number) => {
@@ -336,17 +337,17 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
          <div className="px-4 mt-6 space-y-4">
             {isCurrentCalendarMonth && (
                 <>
-                    {/* 1. My Templates / Pick List */}
-                    <div className="bg-white dark:bg-zinc-900 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    {/* 1. My Templates / Pick List (Foldable) */}
+                    <div className="bg-white dark:bg-zinc-900 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden transition-all">
                         <div 
-                          className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-md-surface-container transition-colors"
+                          className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-md-surface-container"
                           onClick={() => setIsPickListExpanded(!isPickListExpanded)}
                         >
                             <div className="flex items-center gap-2">
-                                <ListPlus size={16} className="text-md-primary" />
+                                <ListPlus size={18} className="text-md-primary" />
                                 <h4 className="font-black text-[11px] uppercase tracking-widest text-md-on-surface-variant">My Pick List</h4>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); setIsManagingTemplates(!isManagingTemplates); }}
                                     className={`p-1.5 rounded-lg transition-colors ${isManagingTemplates ? 'bg-md-primary text-white' : 'text-gray-400 hover:bg-md-surface-container'}`}
@@ -358,15 +359,15 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         </div>
 
                         {isPickListExpanded && (
-                            <div className="p-4 pt-0 space-y-4 animate-in slide-in-from-top-2">
+                            <div className="px-4 pb-4 animate-in slide-in-from-top-2">
                                 {isManagingTemplates && (
-                                    <div className="p-4 bg-md-surface-container rounded-3xl border border-dashed border-md-primary/20 space-y-3">
+                                    <div className="p-4 bg-md-surface-container rounded-3xl border border-dashed border-md-primary/20 space-y-3 mb-4">
                                         <div className="flex gap-2">
                                             <input 
                                                 type="text"
                                                 value={newTemplate}
                                                 onChange={(e) => setNewTemplate(e.target.value)}
-                                                placeholder="Add recurring item..."
+                                                placeholder="Add item..."
                                                 className="flex-1 px-4 py-2 bg-white rounded-xl text-xs font-bold outline-none border-none shadow-inner"
                                             />
                                             <button 
@@ -386,7 +387,6 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                         </div>
                                     </div>
                                 )}
-
                                 <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar">
                                     {templates.map(itemName => (
                                         <button 
@@ -407,14 +407,14 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         )}
                     </div>
 
-                    {/* 2. To Buy List (Numbered List) */}
-                    <div className="bg-white dark:bg-zinc-900 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    {/* 2. To Buy List (Numbered List & Foldable) */}
+                    <div className="bg-white dark:bg-zinc-900 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden transition-all">
                         <div 
-                          className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-md-surface-container transition-colors"
+                          className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-md-surface-container"
                           onClick={() => setIsToBuyExpanded(!isToBuyExpanded)}
                         >
                             <div className="flex items-center gap-2">
-                                <ListOrdered size={16} className="text-md-primary" />
+                                <ListOrdered size={18} className="text-md-primary" />
                                 <h4 className="font-black text-[11px] uppercase tracking-widest text-md-on-surface-variant">To Buy List</h4>
                                 {toBuyList.length > 0 && (
                                     <span className="bg-md-primary text-white text-[9px] px-2 py-0.5 rounded-full font-black ml-1">{toBuyList.length}</span>
@@ -424,10 +424,10 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         </div>
 
                         {isToBuyExpanded && (
-                            <div className="p-4 pt-0 space-y-2 animate-in slide-in-from-top-2">
+                            <div className="px-4 pb-4 animate-in slide-in-from-top-2">
                                 {toBuyList.length === 0 ? (
-                                    <div className="p-6 border-2 border-dashed border-gray-100 dark:border-zinc-800 rounded-[24px] text-center opacity-40">
-                                        <p className="text-[10px] font-black uppercase tracking-widest italic">Pick items above to build list</p>
+                                    <div className="p-8 border-2 border-dashed border-gray-100 dark:border-zinc-800 rounded-[24px] text-center opacity-40">
+                                        <p className="text-[10px] font-black uppercase tracking-widest italic">Empty List</p>
                                     </div>
                                 ) : (
                                     <div className="divide-y divide-gray-50 dark:divide-zinc-800">
@@ -463,11 +463,14 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                     </div>
 
                     {/* 3. Entry Form */}
-                    <form onSubmit={handleQuickAdd} className="bg-md-surface-container-high dark:bg-zinc-900 p-5 rounded-md-card border border-md-outline/10 shadow-sm space-y-4 animate-in slide-in-from-top-2">
+                    <form 
+                      onSubmit={handleQuickAdd} 
+                      className="bg-md-surface-container-high dark:bg-zinc-900 p-5 rounded-md-card border border-md-outline/10 shadow-sm space-y-4 animate-in slide-in-from-top-2"
+                    >
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
                                 <ShoppingCart size={18} className="text-md-primary" />
-                                <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant uppercase tracking-widest">Entry Form</h4>
+                                <h4 className="font-black text-xs uppercase tracking-widest text-md-on-surface-variant">Entry Form</h4>
                             </div>
                             <button type="button" onClick={refreshTime} className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm text-md-primary active:rotate-180 transition-transform">
                                 <Clock size={16} />
@@ -480,10 +483,10 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                 value={item}
                                 onChange={(e) => {
                                     setItem(e.target.value);
-                                    if (processingIndex !== null) setProcessingIndex(null); // Unlink if edited
+                                    if (processingIndex !== null) setProcessingIndex(null);
                                 }}
                                 placeholder="Item name..."
-                                className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner dark:text-white"
+                                className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner dark:text-white border-2 border-transparent focus:border-md-primary"
                                 required
                             />
                             <input 
@@ -493,7 +496,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                 onChange={(e) => setAmount(e.target.value)}
                                 enterKeyHint="done"
                                 placeholder="Price"
-                                className="w-24 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black text-rose-600 shadow-inner dark:text-rose-400"
+                                className="w-24 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black text-rose-600 shadow-inner dark:text-rose-400 border-2 border-transparent focus:border-md-primary"
                                 required
                             />
                         </div>
@@ -519,27 +522,26 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         </div>
                         <button 
                             type="submit" 
-                            disabled={!item || !amount || parseFloat(amount) <= 0}
                             className="w-full bg-md-primary text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-3 disabled:opacity-50"
                         >
                             <Plus size={18} strokeWidth={3} />
-                            {processingIndex !== null ? 'Add & Remove from List' : 'Add'}
+                            {processingIndex !== null ? 'Add & Remove' : 'Add'}
                         </button>
                     </form>
                 </>
             )}
 
-            {/* Transaction List (History) */}
-            <div className="space-y-12 pb-10 mt-4">
+            {/* History List */}
+            <div className="space-y-12 pb-10 mt-6">
                 <div className="flex items-center gap-2 px-2 border-b pb-2 dark:border-zinc-800">
-                    <Receipt size={14} className="text-md-primary" />
-                    <h4 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Purchase History</h4>
+                    <Receipt size={16} className="text-md-primary" />
+                    <h4 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Bazar History</h4>
                 </div>
 
                 {bazarTransactions.length === 0 ? (
-                    <div className="py-10 text-center opacity-30 flex flex-col items-center gap-4">
+                    <div className="py-12 text-center opacity-30 flex flex-col items-center gap-4">
                         <Store size={64} strokeWidth={1} />
-                        <p className="font-black text-xs uppercase tracking-[0.2em]">List is Empty</p>
+                        <p className="font-black text-xs uppercase tracking-[0.2em]">No Items</p>
                     </div>
                 ) : (
                     sortedDays.map(dayKey => {
@@ -556,7 +558,7 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                         </div>
                                         <div>
                                             <p className="text-sm font-black text-md-on-surface tracking-tight dark:text-white">
-                                                {dateObj.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' })}
+                                                {dateObj.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
                                             </p>
                                             <p className="text-[10px] font-black uppercase tracking-widest text-md-primary">Daily Total</p>
                                         </div>
