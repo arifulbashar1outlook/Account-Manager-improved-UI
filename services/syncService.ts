@@ -21,17 +21,25 @@ export const clearSyncConfig = () => {
   localStorage.removeItem(SYNC_CONFIG_KEY);
 };
 
+/**
+ * Merges cloud data with local data.
+ * Prioritizes the order from the cloud (Pushing Sequence) as requested.
+ */
 export const mergeFinancialData = (local: Transaction[], cloud: Transaction[]): Transaction[] => {
   const mergedMap = new Map<string, Transaction>();
-  local.forEach(t => mergedMap.set(t.id, t));
-  cloud.forEach(t => {
+  
+  // Cloud data is the primary source of truth for "pushing time" order
+  cloud.forEach(t => mergedMap.set(t.id, t));
+  
+  // Local data that hasn't been synced yet should be at the start (newest entries)
+  local.forEach(t => {
     if (!mergedMap.has(t.id)) {
       mergedMap.set(t.id, t);
     }
   });
-  return Array.from(mergedMap.values()).sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+
+  // Return values - preserving the sequence rather than sorting by date
+  return Array.from(mergedMap.values());
 };
 
 export const pushToSheets = async (
@@ -101,7 +109,7 @@ export const pullFromSheets = async (): Promise<{
 
 export const GOOGLE_APPS_SCRIPT_CODE = `
 /**
- * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC (v2 - Multi-Device Full Sync)
+ * GOOGLE APPS SCRIPT FOR SMARTSPEND SYNC (v3 - Order-Preserved Sync)
  */
 function doGet(e) {
   var action = e.parameter.action;
@@ -115,7 +123,7 @@ function doGet(e) {
     var transactions = [];
     if (txSheet && txSheet.getLastRow() > 1) {
       var data = txSheet.getDataRange().getValues();
-      data.shift();
+      data.shift(); // Remove headers
       transactions = data.map(function(row) {
         return {id: row[0], date: row[1], amount: Number(row[2]), type: row[3], category: row[4], description: row[5], accountId: row[6], targetAccountId: row[7] || undefined};
       });
@@ -157,7 +165,7 @@ function doPost(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
   if (payload.action === 'push') {
-    // 1. Transactions
+    // 1. Transactions - Appended in the order they were pushed
     var txSheet = ss.getSheetByName("Transactions") || ss.insertSheet("Transactions");
     txSheet.clear();
     txSheet.appendRow(["ID", "Date", "Amount", "Type", "Category", "Description", "AccountId", "TargetAccountId"]);

@@ -347,7 +347,9 @@ const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // SYNC PULL - Fetches everything from Cloud
+  /**
+   * PULL DATA - Fetches state from Google Sheets.
+   */
   const handleSyncPull = useCallback(async (silent = false) => {
     if (!navigator.onLine) {
         setSyncStatus('none');
@@ -357,7 +359,7 @@ const App: React.FC = () => {
     
     const cloudData = await pullFromSheets();
     if (cloudData) {
-      // 1. Merge Transactions (IDs preserve uniqueness)
+      // 1. Merge Transactions - using our push-sequence-preserving logic
       setTransactions(prev => {
         const merged = mergeFinancialData(prev, cloudData.transactions);
         saveStoredTransactions(merged);
@@ -374,7 +376,7 @@ const App: React.FC = () => {
         return mergedAccs;
       });
 
-      // 3. Set Bazar State from Cloud
+      // 3. Set Bazar State
       setBazarTemplates(cloudData.templates);
       setToBuyList(cloudData.toBuyList);
 
@@ -384,7 +386,9 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // TRIGGER PUSH - Uploads current local state
+  /**
+   * PUSH DATA - Updates the Google Sheet with current local state.
+   */
   const triggerAutoPush = useCallback(async (overrides?: { txs?: Transaction[], accs?: Account[], tmpl?: string[], buy?: string[] }) => {
     if (!navigator.onLine) {
         setSyncStatus('pending');
@@ -392,42 +396,41 @@ const App: React.FC = () => {
     }
     setSyncStatus('syncing');
     
-    // Ensure data is sorted by date before pushing to Sheet for chronological order
+    // We do NOT sort by date here to preserve "pushing time" sequence as requested.
     const txsToPush = overrides?.txs || transactions;
-    const sortedTxs = [...txsToPush].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const accsToPush = overrides?.accs || accounts;
+    const tmplToPush = overrides?.tmpl || bazarTemplates;
+    const buyToPush = overrides?.buy || toBuyList;
 
-    const success = await pushToSheets(
-      sortedTxs, 
-      overrides?.accs || accounts,
-      overrides?.tmpl || bazarTemplates,
-      overrides?.buy || toBuyList
-    );
+    const success = await pushToSheets(txsToPush, accsToPush, tmplToPush, buyToPush);
     
     if (success) {
       setSyncStatus('synced');
-      // After a successful push, immediately pull to sync with other devices' recent changes
+      // After pushing, immediately pull to ensure we have the latest consolidated view
       await handleSyncPull(true);
     } else {
       setSyncStatus('error');
     }
   }, [transactions, accounts, bazarTemplates, toBuyList, handleSyncPull]);
 
-  // INITIAL BOOT SYNC - CLOUD FIRST
+  /**
+   * BOOT SEQUENCE - First pull data, then start background sync
+   */
   useEffect(() => {
     const config = getSyncConfig();
     if (config && config.url && navigator.onLine) {
-      // Force an immediate pull on startup before doing anything else
+      // Boot pull
       handleSyncPull().then(() => {
-        // Also do a background poll
+        // Background sync every 60 seconds
         const pollInterval = setInterval(() => {
           if (navigator.onLine) handleSyncPull(true);
-        }, 15000); // 15s Background Refresh for other devices
+        }, 60000); 
         return () => clearInterval(pollInterval);
       });
     }
   }, [handleSyncPull]);
 
-  // Handle Online/Offline lifecycle
+  // Network lifecycle management
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); handleSyncPull(true).then(() => triggerAutoPush()); };
     const handleOffline = () => setIsOnline(false);
@@ -436,9 +439,15 @@ const App: React.FC = () => {
     return () => { window.removeEventListener('online', handleOnline); window.removeEventListener('offline', handleOffline); };
   }, [handleSyncPull, triggerAutoPush]);
 
-  // DATA HANDLERS: LOCAL -> PUSH -> PULL cycle
+  /**
+   * CENTRALIZED DATA MODIFICATION FLOW
+   * 1. Update State
+   * 2. Save LocalStorage
+   * 3. Push to Cloud
+   */
   const handleAddTransaction = (t: Omit<Transaction, 'id'>) => {
     const newTx = {...t, id: uuidv4()};
+    // Prepend to array to show newest first in local view
     const updated = [newTx, ...transactions];
     setTransactions(updated);
     saveStoredTransactions(updated);
