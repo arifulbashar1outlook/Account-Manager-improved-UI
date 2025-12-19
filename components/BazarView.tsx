@@ -54,7 +54,10 @@ const BazarView: React.FC<BazarViewProps> = ({
         return localTime.toISOString().slice(0, 16);
     };
 
-    const defaultCash = accounts.find(a => a.id === 'cash')?.id || accounts[0]?.id || '';
+    // Prioritize 'cash' wallet by ID or name
+    const defaultCash = accounts.find(a => a.id === 'cash')?.id || 
+                      accounts.find(a => a.name.toLowerCase().includes('cash'))?.id || 
+                      accounts[0]?.id || '';
     
     const [item, setItem] = useState('');
     const [amount, setAmount] = useState('');
@@ -439,7 +442,7 @@ const BazarView: React.FC<BazarViewProps> = ({
                                                         return (
                                                             <SwipeableItem 
                                                               key={t.id}
-                                                              onDelete={() => { if(confirm("Delete record?")) onDeleteTransaction(t.id); }}
+                                                              onDelete={() => onDeleteTransaction(t.id)}
                                                               onEdit={() => startEditing(t)}
                                                             >
                                                               <div onClick={() => startEditing(t)} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">

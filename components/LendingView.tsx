@@ -24,6 +24,7 @@ import {
   ArrowDownCircle
 } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
+import SwipeableItem from './SwipeableItem';
 
 interface LendingViewProps {
   transactions: Transaction[];
@@ -399,7 +400,7 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                                 type="text" 
                                 value={editDesc}
                                 onChange={(e) => setEditDesc(e.target.value)}
-                                className="w-full px-4 py-3 bg-md-surface-container rounded-xl outline-none border border-transparent focus:border-md-primary font-black dark:bg-zinc-800 dark:text-white"
+                                className="w-full px-4 py-3 bg-md-surface-container dark:bg-zinc-800 rounded-xl outline-none border border-transparent focus:border-md-primary font-black dark:text-white"
                             />
                         </div>
 
@@ -550,28 +551,33 @@ const LendingView: React.FC<LendingViewProps> = ({ transactions, accounts, onAdd
                             const data = getPersonData(t)!;
                             const acc = accounts.find(a => a.id === t.accountId);
                             return (
-                                <div 
+                                <SwipeableItem 
                                     key={t.id} 
-                                    onClick={() => startEditing(t)}
-                                    className="bg-white dark:bg-zinc-900 p-4 rounded-[24px] border border-gray-50 dark:border-zinc-800 shadow-sm flex items-center justify-between hover:bg-md-surface-container transition-all cursor-pointer group active:scale-[0.98]"
+                                    onDelete={() => onDeleteTransaction(t.id)}
+                                    onEdit={() => startEditing(t)}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${data.type === 'give' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                                            {data.type === 'give' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
-                                        </div>
-                                        <div>
-                                            <p className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{data.type === 'give' ? 'Given Money' : 'Received Money'}</p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>
-                                                    {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {acc?.name || 'Wallet'}
-                                                </p>
+                                    <div 
+                                        onClick={() => startEditing(t)}
+                                        className="bg-white dark:bg-zinc-900 p-4 rounded-[24px] border border-gray-50 dark:border-zinc-800 shadow-sm flex items-center justify-between hover:bg-md-surface-container transition-all cursor-pointer group active:scale-[0.98]"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${data.type === 'give' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                {data.type === 'give' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />}
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-sm text-md-on-surface leading-tight tracking-tight dark:text-white">{data.type === 'give' ? 'Given Money' : 'Received Money'}</p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: acc?.color || '#999' }}>
+                                                        {new Date(t.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {acc?.name || 'Wallet'}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
+                                        <p className={`font-black text-sm ${data.type === 'give' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                            {data.type === 'give' ? '-' : '+'} Tk {t.amount.toLocaleString()}
+                                        </p>
                                     </div>
-                                    <p className={`font-black text-sm ${data.type === 'give' ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                        {data.type === 'give' ? '-' : '+'} Tk {t.amount.toLocaleString()}
-                                    </p>
-                                </div>
+                                </SwipeableItem>
                             );
                         })
                     )}

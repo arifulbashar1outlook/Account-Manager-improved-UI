@@ -17,7 +17,8 @@ import {
   Filter,
   ArrowDown,
   Clock,
-  ArrowRight
+  ArrowRight,
+  ChevronDown
 } from 'lucide-react';
 import { Transaction, AccountType, Category, TransactionType, Account } from '../types';
 import SwipeableItem from './SwipeableItem';
@@ -115,10 +116,9 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
     const handleDelete = (id?: string) => {
         const targetId = id || editingTx?.id;
         if (targetId) {
-            if (window.confirm("Are you sure you want to delete this transaction?")) {
-                onDeleteTransaction(targetId);
-                setEditingTx(null);
-            }
+            // Immediate deletion for swipe consistency
+            onDeleteTransaction(targetId);
+            setEditingTx(null);
         }
     };
 
@@ -176,7 +176,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                                     onChange={(e) => {
                                         const newType = e.target.value as TransactionType;
                                         setEditType(newType);
-                                        if (newType === 'transfer' && !editTargetAccount) {
+                                        if (newType === 'transfer' && (!editTargetAccount || editTargetAccount === editAccount)) {
                                             setEditTargetAccount(accounts.find(a => a.id !== editAccount)?.id || '');
                                         }
                                     }}
@@ -188,11 +188,62 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
                                 </select>
                             </div>
                         </div>
+
+                        {/* Transaction-Specific Controls: From/To or Wallet/Category */}
+                        <div className="grid grid-cols-2 gap-4">
+                            {editType === 'transfer' ? (
+                                <>
+                                    <div className="relative">
+                                        <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary opacity-60 ml-1 mb-1.5 block">From Wallet</label>
+                                        <select
+                                            value={editAccount}
+                                            onChange={(e) => setEditAccount(e.target.value)}
+                                            className="w-full px-5 py-3.5 bg-black/5 dark:bg-black/20 rounded-2xl outline-none font-bold appearance-none dark:text-white"
+                                        >
+                                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="relative">
+                                        <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary opacity-60 ml-1 mb-1.5 block">To Wallet</label>
+                                        <select
+                                            value={editTargetAccount}
+                                            onChange={(e) => setEditTargetAccount(e.target.value)}
+                                            className="w-full px-5 py-3.5 bg-black/5 dark:bg-black/20 rounded-2xl outline-none font-bold appearance-none dark:text-white"
+                                        >
+                                            {accounts.map(a => <option key={a.id} value={a.id} disabled={a.id === editAccount}>{a.name}</option>)}
+                                        </select>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="relative">
+                                        <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary opacity-60 ml-1 mb-1.5 block">Wallet</label>
+                                        <select
+                                            value={editAccount}
+                                            onChange={(e) => setEditAccount(e.target.value)}
+                                            className="w-full px-5 py-3.5 bg-black/5 dark:bg-black/20 rounded-2xl outline-none font-bold appearance-none dark:text-white"
+                                        >
+                                            {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="relative">
+                                        <label className="text-[9px] font-medium uppercase tracking-[0.2em] text-md-primary opacity-60 ml-1 mb-1.5 block">Category</label>
+                                        <select
+                                            value={editCategory}
+                                            onChange={(e) => setEditCategory(e.target.value)}
+                                            className="w-full px-5 py-3.5 bg-black/5 dark:bg-black/20 rounded-2xl outline-none font-bold appearance-none dark:text-white"
+                                        >
+                                            {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                     <div className="flex justify-between items-center pt-6 border-t border-black/5 dark:border-white/5">
                         <button 
                             type="button"
-                            onClick={() => handleDelete()}
+                            onClick={() => { if(window.confirm("Are you sure you want to delete this transaction?")) handleDelete(); }}
                             className="p-3 text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all active:scale-90"
                         >
                             <Trash2 size={20} />

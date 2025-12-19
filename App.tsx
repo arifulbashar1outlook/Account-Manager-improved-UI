@@ -20,7 +20,9 @@ import {
   Zap,
   ArrowRight,
   PieChart,
-  Bot
+  Bot,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -73,7 +75,18 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'syncing' | 'error' | 'none'>('none');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
   const isKeyboardVisible = useKeyboardVisibility();
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
 
   const handleSyncPull = useCallback(async (silent = false) => {
     if (!navigator.onLine) {
@@ -211,17 +224,16 @@ const App: React.FC = () => {
               <LayoutDashboard size={24} strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-[20px] font-extrabold tracking-tight text-white leading-none">Account Manager</h1>
+              <h1 className="text-[18px] font-extrabold tracking-tight text-white leading-none">Account Manager</h1>
               <div className="flex items-center gap-1.5 mt-1 opacity-80">
                 <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
                 <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-white/80">{syncStatus === 'syncing' ? 'Syncing...' : 'System Active'}</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => triggerAutoPush()} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-all active:scale-90"><CloudUpload size={22}/></button>
-            <button onClick={() => handleSyncPull()} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-all active:scale-90"><RotateCw size={22}/></button>
-            <button onClick={() => setIsMenuOpen(true)} className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors active:scale-90"><Menu size={26}/></button>
+          <div className="flex items-center gap-0.5">
+            {/* Theme switcher, Pull and Push are now moved into the side menu for a cleaner look */}
+            <button onClick={() => setIsMenuOpen(true)} className="p-3.5 rounded-full bg-white/10 text-white transition-colors active:scale-90 shadow-md border border-white/20" title="Menu"><Menu size={24}/></button>
           </div>
       </header>
 
@@ -363,16 +375,31 @@ const App: React.FC = () => {
 
       {isMenuOpen && (
         <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsMenuOpen(false)}>
-           <div className="absolute right-0 top-0 bottom-0 w-[300px] glass p-8 pt-safe animate-in slide-in-from-right duration-400 rounded-l-[40px] shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-10 py-4 border-b border-black/5 dark:border-white/5">
+           <div className="absolute right-0 top-0 bottom-0 w-[300px] glass p-8 pt-safe animate-in slide-in-from-right duration-400 rounded-l-[40px] shadow-2xl overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-8 py-4 border-b border-black/5 dark:border-white/5">
                 <h3 className="font-extrabold text-xl">System</h3>
                 <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full"><XIcon size={24}/></button>
               </div>
+              
               <div className="space-y-1.5">
+                 <div className="px-6 pb-2">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-md-primary opacity-60">Features</h4>
+                 </div>
                  <MenuBtn onClick={() => { setActiveTab('ai-setup'); setIsMenuOpen(false); }} icon={Bot} label="AI Features" />
                  <MenuBtn onClick={() => { setActiveTab('sync-setup'); setIsMenuOpen(false); }} icon={FileSpreadsheet} label="Cloud Sync Setup" />
                  <MenuBtn onClick={() => { setActiveTab('wallet-manager'); setIsMenuOpen(false); }} icon={CreditCard} label="Manage Wallets" />
                  <MenuBtn onClick={() => { setActiveTab('lending'); setIsMenuOpen(false); }} icon={HandCoins} label="Debt & Loans" />
+                 
+                 <div className="px-6 pt-6 pb-2">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-md-primary opacity-60">Cloud & Theme</h4>
+                 </div>
+                 <MenuBtn onClick={() => { triggerAutoPush(); setIsMenuOpen(false); }} icon={CloudUpload} label="Push Data to Cloud" color="text-emerald-500" />
+                 <MenuBtn onClick={() => { handleSyncPull(); setIsMenuOpen(false); }} icon={RotateCw} label="Pull Data from Cloud" color="text-amber-500" />
+                 <MenuBtn onClick={() => { setDarkMode(!darkMode); }} icon={darkMode ? Sun : Moon} label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} />
+              </div>
+
+              <div className="mt-10 p-6 bg-md-primary/5 rounded-3xl border border-md-primary/10">
+                 <p className="text-[9px] font-black uppercase tracking-widest text-md-primary/60 text-center">Version 2.5.0 Stable</p>
               </div>
            </div>
         </div>
@@ -383,10 +410,10 @@ const App: React.FC = () => {
   );
 };
 
-const MenuBtn = ({ onClick, icon: Icon, label }: any) => (
+const MenuBtn = ({ onClick, icon: Icon, label, color }: any) => (
   <button onClick={onClick} className="w-full flex items-center gap-4 py-4 px-6 rounded-2xl hover:bg-md-primary/10 dark:hover:bg-md-primary/20 text-sm font-semibold transition-all active:scale-95 group">
-     <div className="p-2.5 bg-md-primary/5 dark:bg-white/5 rounded-xl text-md-primary group-hover:scale-110 transition-transform"><Icon size={20} /></div>
-     {label}
+     <div className={`p-2.5 bg-md-primary/5 dark:bg-white/5 rounded-xl ${color || 'text-md-primary'} group-hover:scale-110 transition-transform`}><Icon size={20} /></div>
+     <span className="dark:text-white">{label}</span>
   </button>
 );
 
