@@ -15,10 +15,13 @@ import {
   Receipt, 
   Hash, 
   ChevronDown,
+  ChevronUp,
   Sparkles,
   Edit3,
   ListPlus,
-  Settings2
+  Settings2,
+  ListOrdered,
+  ArrowRight
 } from 'lucide-react';
 import { Transaction, Category, AccountType, Account } from '../types';
 
@@ -31,6 +34,7 @@ interface BazarViewProps {
 }
 
 const STORAGE_KEY_TEMPLATES = 'bazar_item_templates_v1';
+const STORAGE_KEY_TOBUY = 'bazar_tobuy_list_v1';
 
 const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTransaction, onUpdateTransaction, onDeleteTransaction }) => {
     const getLocalDateTime = () => {
@@ -48,17 +52,35 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
     const [dateTime, setDateTime] = useState(getLocalDateTime());
     const [viewDate, setViewDate] = useState(new Date());
 
+    // UI States
+    const [isPickListExpanded, setIsPickListExpanded] = useState(true);
+    const [isToBuyExpanded, setIsToBuyExpanded] = useState(true);
+
     // Custom Templates Logic
     const [templates, setTemplates] = useState<string[]>(() => {
         const saved = localStorage.getItem(STORAGE_KEY_TEMPLATES);
         return saved ? JSON.parse(saved) : ['Potato', 'Onion', 'Rice', 'Oil', 'Egg', 'Milk'];
     });
+
+    // To Buy List Logic
+    const [toBuyList, setToBuyList] = useState<string[]>(() => {
+        const saved = localStorage.getItem(STORAGE_KEY_TOBUY);
+        return saved ? JSON.parse(saved) : [];
+    });
+    
+    // Tracks if the current form entry originated from the To-Buy list
+    const [processingIndex, setProcessingIndex] = useState<number | null>(null);
+
     const [newTemplate, setNewTemplate] = useState('');
     const [isManagingTemplates, setIsManagingTemplates] = useState(false);
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY_TEMPLATES, JSON.stringify(templates));
     }, [templates]);
+
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY_TOBUY, JSON.stringify(toBuyList));
+    }, [toBuyList]);
 
     const [editingTx, setEditingTx] = useState<Transaction | null>(null);
     const [editDesc, setEditDesc] = useState('');
@@ -87,8 +109,8 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
 
     const totalBazarSpend = bazarTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-    const handleQuickAdd = (e: React.FormEvent) => {
-      e.preventDefault();
+    const handleQuickAdd = (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
       if(!item) return;
       
       const finalDate = dateTime ? new Date(dateTime).toISOString() : new Date().toISOString();
@@ -102,6 +124,14 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
         date: finalDate,
         accountId: paidFrom
       });
+
+      // If this was added from the "To Buy" list, remove it now
+      if (processingIndex !== null) {
+          const newList = [...toBuyList];
+          newList.splice(processingIndex, 1);
+          setToBuyList(newList);
+          setProcessingIndex(null);
+      }
       
       setItem('');
       setAmount('');
@@ -110,13 +140,31 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
       }
     };
 
-    const handleSuggestionClick = (name: string) => {
+    const handlePickListClick = (name: string) => {
+        // Add to "To Buy" list instead of form directly
+        if (!toBuyList.includes(name)) {
+            setToBuyList([...toBuyList, name]);
+            // Automatically expand to-buy if it's closed
+            setIsToBuyExpanded(true);
+        }
+    };
+
+    const handleToBuyItemClick = (name: string, index: number) => {
+        // Populates the form
         setItem(name);
+        setProcessingIndex(index);
         setTimeout(() => {
           if (priceInputRef.current) {
             priceInputRef.current.focus();
           }
         }, 50);
+    };
+
+    const removeFromToBuy = (index: number) => {
+        const newList = [...toBuyList];
+        newList.splice(index, 1);
+        setToBuyList(newList);
+        if (processingIndex === index) setProcessingIndex(null);
     };
 
     const addTemplate = () => {
@@ -280,70 +328,137 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
             </div>
          )}
 
-         {/* Picker & Form Area */}
-         <div className="px-4 mt-6 space-y-6">
+         {/* Picker & Shopping List Area */}
+         <div className="px-4 mt-6 space-y-4">
             {isCurrentCalendarMonth && (
-                <div className="space-y-4">
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between px-2">
+                <>
+                    {/* 1. My Templates / Pick List */}
+                    <div className="bg-white dark:bg-zinc-900 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div 
+                          className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-md-surface-container transition-colors"
+                          onClick={() => setIsPickListExpanded(!isPickListExpanded)}
+                        >
                             <div className="flex items-center gap-2">
-                                <ListPlus size={14} className="text-md-primary" />
-                                <h4 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">My Pick List</h4>
+                                <ListPlus size={16} className="text-md-primary" />
+                                <h4 className="font-black text-[11px] uppercase tracking-widest text-md-on-surface-variant">My Pick List</h4>
                             </div>
-                            <button 
-                                onClick={() => setIsManagingTemplates(!isManagingTemplates)}
-                                className={`p-1.5 rounded-lg transition-colors ${isManagingTemplates ? 'bg-md-primary text-white' : 'text-gray-400 hover:bg-md-surface-container'}`}
-                            >
-                                <Settings2 size={16} />
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); setIsManagingTemplates(!isManagingTemplates); }}
+                                    className={`p-1.5 rounded-lg transition-colors ${isManagingTemplates ? 'bg-md-primary text-white' : 'text-gray-400 hover:bg-md-surface-container'}`}
+                                >
+                                    <Settings2 size={16} />
+                                </button>
+                                {isPickListExpanded ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+                            </div>
                         </div>
 
-                        {isManagingTemplates && (
-                            <div className="p-4 bg-md-surface-container rounded-3xl border border-dashed border-md-primary/20 space-y-3 animate-in fade-in slide-in-from-top-2">
-                                <div className="flex gap-2">
-                                    <input 
-                                        type="text"
-                                        value={newTemplate}
-                                        onChange={(e) => setNewTemplate(e.target.value)}
-                                        placeholder="Add recurring item..."
-                                        className="flex-1 px-4 py-2 bg-white rounded-xl text-xs font-bold outline-none border-none shadow-inner"
-                                    />
-                                    <button 
-                                        onClick={addTemplate}
-                                        className="p-2 bg-md-primary text-white rounded-xl shadow-md active:scale-95"
-                                    >
-                                        <Plus size={20} />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {templates.map(t => (
-                                        <div key={t} className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-[10px] font-black uppercase text-md-on-surface shadow-sm border border-gray-100">
-                                            {t}
-                                            <button onClick={() => removeTemplate(t)} className="text-rose-500 hover:bg-rose-50 p-0.5 rounded-full"><X size={12}/></button>
+                        {isPickListExpanded && (
+                            <div className="p-4 pt-0 space-y-4 animate-in slide-in-from-top-2">
+                                {isManagingTemplates && (
+                                    <div className="p-4 bg-md-surface-container rounded-3xl border border-dashed border-md-primary/20 space-y-3">
+                                        <div className="flex gap-2">
+                                            <input 
+                                                type="text"
+                                                value={newTemplate}
+                                                onChange={(e) => setNewTemplate(e.target.value)}
+                                                placeholder="Add recurring item..."
+                                                className="flex-1 px-4 py-2 bg-white rounded-xl text-xs font-bold outline-none border-none shadow-inner"
+                                            />
+                                            <button 
+                                                onClick={addTemplate}
+                                                className="p-2 bg-md-primary text-white rounded-xl shadow-md active:scale-95"
+                                            >
+                                                <Plus size={20} />
+                                            </button>
                                         </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {templates.map(t => (
+                                                <div key={t} className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-[10px] font-black uppercase text-md-on-surface shadow-sm border border-gray-100">
+                                                    {t}
+                                                    <button onClick={() => removeTemplate(t)} className="text-rose-500 hover:bg-rose-50 p-0.5 rounded-full"><X size={12}/></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto no-scrollbar">
+                                    {templates.map(itemName => (
+                                        <button 
+                                            key={itemName}
+                                            type="button"
+                                            onClick={() => handlePickListClick(itemName)}
+                                            className={`px-4 py-2 border transition-all active:scale-95 shadow-sm rounded-2xl text-[11px] font-black ${
+                                            toBuyList.includes(itemName) 
+                                            ? 'bg-md-primary/10 text-md-primary border-md-primary/30' 
+                                            : 'bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-md-on-surface'
+                                            }`}
+                                        >
+                                            {itemName}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
                         )}
-
-                        <div className="flex flex-wrap gap-2 px-1 max-h-40 overflow-y-auto no-scrollbar">
-                            {templates.map(itemName => (
-                                <button 
-                                    key={itemName}
-                                    type="button"
-                                    onClick={() => handleSuggestionClick(itemName)}
-                                    className={`px-4 py-2 border transition-all active:scale-95 shadow-sm rounded-2xl text-[11px] font-black ${
-                                      item === itemName 
-                                      ? 'bg-md-primary text-white border-md-primary' 
-                                      : 'bg-white dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-md-on-surface'
-                                    }`}
-                                >
-                                    {itemName}
-                                </button>
-                            ))}
-                        </div>
                     </div>
 
+                    {/* 2. To Buy List (Numbered List) */}
+                    <div className="bg-white dark:bg-zinc-900 rounded-[28px] border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        <div 
+                          className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-md-surface-container transition-colors"
+                          onClick={() => setIsToBuyExpanded(!isToBuyExpanded)}
+                        >
+                            <div className="flex items-center gap-2">
+                                <ListOrdered size={16} className="text-md-primary" />
+                                <h4 className="font-black text-[11px] uppercase tracking-widest text-md-on-surface-variant">To Buy List</h4>
+                                {toBuyList.length > 0 && (
+                                    <span className="bg-md-primary text-white text-[9px] px-2 py-0.5 rounded-full font-black ml-1">{toBuyList.length}</span>
+                                )}
+                            </div>
+                            {isToBuyExpanded ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+                        </div>
+
+                        {isToBuyExpanded && (
+                            <div className="p-4 pt-0 space-y-2 animate-in slide-in-from-top-2">
+                                {toBuyList.length === 0 ? (
+                                    <div className="p-6 border-2 border-dashed border-gray-100 dark:border-zinc-800 rounded-[24px] text-center opacity-40">
+                                        <p className="text-[10px] font-black uppercase tracking-widest italic">Pick items above to build list</p>
+                                    </div>
+                                ) : (
+                                    <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+                                        {toBuyList.map((itemName, idx) => (
+                                            <div 
+                                                key={`${itemName}-${idx}`}
+                                                className={`flex items-center justify-between py-3 px-2 group hover:bg-md-primary/5 transition-colors cursor-pointer rounded-xl ${processingIndex === idx ? 'bg-md-primary/10' : ''}`}
+                                                onClick={() => handleToBuyItemClick(itemName, idx)}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-6 h-6 rounded-lg bg-md-surface-container dark:bg-zinc-800 flex items-center justify-center text-[10px] font-black text-md-primary">
+                                                        {idx + 1}
+                                                    </div>
+                                                    <p className={`font-black text-sm dark:text-white ${processingIndex === idx ? 'text-md-primary' : 'text-md-on-surface'}`}>
+                                                        {itemName}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {processingIndex === idx && <ArrowRight size={16} className="text-md-primary animate-pulse" />}
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); removeFromToBuy(idx); }}
+                                                        className="p-2 text-gray-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 3. Entry Form */}
                     <form onSubmit={handleQuickAdd} className="bg-md-surface-container-high dark:bg-zinc-900 p-5 rounded-md-card border border-md-outline/10 shadow-sm space-y-4 animate-in slide-in-from-top-2">
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-3">
@@ -359,7 +474,10 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                 ref={itemInputRef}
                                 type="text" 
                                 value={item}
-                                onChange={(e) => setItem(e.target.value)}
+                                onChange={(e) => {
+                                    setItem(e.target.value);
+                                    if (processingIndex !== null) setProcessingIndex(null); // Unlink if edited
+                                }}
                                 placeholder="Item name..."
                                 className="flex-1 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black shadow-inner dark:text-white"
                                 required
@@ -369,6 +487,11 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                                 type="number" 
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleQuickAdd();
+                                  }
+                                }}
                                 placeholder="Price"
                                 className="w-24 px-4 py-3 bg-white dark:bg-zinc-800 rounded-2xl outline-none text-sm font-black text-rose-600 shadow-inner dark:text-rose-400"
                             />
@@ -395,14 +518,19 @@ const BazarView: React.FC<BazarViewProps> = ({ transactions, accounts, onAddTran
                         </div>
                         <button type="submit" className="w-full bg-md-primary text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-3">
                             <Plus size={18} strokeWidth={3} />
-                            Save to History
+                            {processingIndex !== null ? 'Add & Remove from List' : 'Add'}
                         </button>
                     </form>
-                </div>
+                </>
             )}
 
-            {/* Transaction List */}
-            <div className="space-y-12 pb-10">
+            {/* Transaction List (History) */}
+            <div className="space-y-12 pb-10 mt-4">
+                <div className="flex items-center gap-2 px-2 border-b pb-2 dark:border-zinc-800">
+                    <Receipt size={14} className="text-md-primary" />
+                    <h4 className="font-black text-[10px] uppercase tracking-widest text-md-on-surface-variant">Purchase History</h4>
+                </div>
+
                 {bazarTransactions.length === 0 ? (
                     <div className="py-10 text-center opacity-30 flex flex-col items-center gap-4">
                         <Store size={64} strokeWidth={1} />
