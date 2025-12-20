@@ -10,7 +10,9 @@ import {
   Check, 
   Search, 
   Clock,
-  ArrowRight
+  ArrowRight,
+  Calendar,
+  CalendarDays
 } from 'lucide-react';
 import { Transaction, AccountType, Category, TransactionType, Account } from '../types';
 import SwipeableItem from './SwipeableItem';
@@ -26,7 +28,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
     const [filterPeriod, setFilterPeriod] = useState<'all' | 'date' | 'month'>('all');
-    const [selectedDate, setSelectedDate] = useState('');
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
     const [editingTx, setEditingTx] = useState<Transaction | null>(null);
@@ -56,6 +58,10 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
         }
         return result;
     }, [transactions, searchTerm, typeFilter, filterPeriod, selectedDate, selectedMonth]);
+
+    const totalFilteredAmount = useMemo(() => {
+        return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+    }, [filteredTransactions]);
 
     const groupedAll = useMemo(() => {
         const groups: Record<string, Transaction[]> = {};
@@ -208,16 +214,63 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
 
          <div className="px-6 space-y-6">
             <h2 className="text-3xl font-black tracking-tight text-md-on-surface pt-4 pb-2 dark:text-white">History</h2>
+            
+            {/* Search */}
             <div className="relative group">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-md-on-surface-variant opacity-40"><Search size={18} /></div>
                 <input type="text" placeholder="Search by name or category..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full glass px-12 py-4 rounded-[20px] text-sm font-semibold outline-none border-none focus:ring-2 focus:ring-md-primary/20 transition-all shadow-sm dark:text-white" />
                 {searchTerm && (<button type="button" onClick={() => setSearchTerm('')} className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-md-on-surface-variant hover:bg-black/5 rounded-full"><X size={14} /></button>)}
             </div>
+
+            {/* Type Filters */}
             <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-2 px-2 no-scrollbar">
                 <FilterChip label="All" active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
                 <FilterChip label="Expenses" active={typeFilter === 'expense'} onClick={() => setTypeFilter('expense')} icon={TrendingDown} />
                 <FilterChip label="Income" active={typeFilter === 'income'} onClick={() => setTypeFilter('income')} icon={TrendingUp} />
                 <FilterChip label="Transfers" active={typeFilter === 'transfer'} onClick={() => setTypeFilter('transfer')} icon={ArrowRightLeft} />
+            </div>
+
+            {/* Timeframe Selection */}
+            <div className="space-y-4">
+                <div className="flex gap-2.5 overflow-x-auto no-scrollbar">
+                    <FilterChip label="All Time" active={filterPeriod === 'all'} onClick={() => setFilterPeriod('all')} />
+                    <FilterChip label="Daily" active={filterPeriod === 'date'} onClick={() => setFilterPeriod('date')} icon={CalendarDays} />
+                    <FilterChip label="Monthly" active={filterPeriod === 'month'} onClick={() => setFilterPeriod('month')} icon={Calendar} />
+                </div>
+
+                {filterPeriod === 'date' && (
+                    <div className="glass p-4 rounded-2xl border border-black/5 animate-in slide-in-from-top-2">
+                        <input 
+                            type="date" 
+                            value={selectedDate} 
+                            onChange={(e) => setSelectedDate(e.target.value)} 
+                            className="w-full bg-transparent outline-none font-black text-sm uppercase tracking-widest text-md-primary dark:text-white"
+                        />
+                    </div>
+                )}
+
+                {filterPeriod === 'month' && (
+                    <div className="glass p-4 rounded-2xl border border-black/5 animate-in slide-in-from-top-2">
+                        <input 
+                            type="month" 
+                            value={selectedMonth} 
+                            onChange={(e) => setSelectedMonth(e.target.value)} 
+                            className="w-full bg-transparent outline-none font-black text-sm uppercase tracking-widest text-md-primary dark:text-white"
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Total Summary for Filtered View */}
+            <div className="mesh-gradient-primary p-6 rounded-[32px] shadow-lg text-white space-y-1 relative overflow-hidden group">
+                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl animate-mesh"></div>
+                <div className="flex items-center gap-2 opacity-70">
+                    <History size={14} />
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em]">
+                        {typeFilter === 'all' ? 'Filtered Total' : `${typeFilter.charAt(0).toUpperCase() + typeFilter.slice(1)} Total`}
+                    </p>
+                </div>
+                <h3 className="text-2xl font-black tracking-tighter">Tk {totalFilteredAmount.toLocaleString()}</h3>
             </div>
          </div>
 
@@ -225,7 +278,7 @@ const HistoryView: React.FC<HistoryViewProps> = ({ transactions, accounts, onUpd
              {filteredTransactions.length === 0 ? (
                 <div className="py-24 text-center opacity-30 flex flex-col items-center gap-5">
                    <div className="p-8 bg-black/5 rounded-[40px]"><History size={64} strokeWidth={1} /></div>
-                   <p className="font-medium text-xs uppercase tracking-[0.3em]">Vault Empty</p>
+                   <p className="font-medium text-xs uppercase tracking-[0.3em]">No Records in this period</p>
                 </div>
              ) : (
                 sortedAllDates.map(date => {
