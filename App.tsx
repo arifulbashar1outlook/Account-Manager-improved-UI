@@ -269,12 +269,21 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'input' && <div className="p-4 space-y-6 pb-32 animate-in fade-in duration-300"><TransactionForm onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} /></div>}
+        {activeTab === 'input' && (
+          <div className="p-4 space-y-6 pb-32 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 pt-4 pb-2">
+              <PlusCircle className="text-md-primary" size={24} />
+              <h2 className="text-3xl font-extrabold tracking-tight text-md-on-surface dark:text-white">New Entry</h2>
+            </div>
+            <SalaryManager onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
+            <TransactionForm onAddTransaction={(t) => { handleAddTransaction(t); setActiveTab('dashboard'); }} accounts={accounts} />
+          </div>
+        )}
+
         {activeTab === 'bazar' && <BazarView transactions={transactions} accounts={accounts} templates={bazarTemplates} setTemplates={setBazarTemplates} toBuyList={toBuyList} setToBuyList={setToBuyList} onAddTransaction={handleAddTransaction} onUpdateTransaction={handleUpdateTransaction} onDeleteTransaction={handleDeleteTransaction} />}
         {activeTab === 'full-report' && <FullMonthlyReport transactions={transactions} accounts={accounts} />}
         {activeTab === 'history' && <HistoryView transactions={transactions} accounts={accounts} onUpdateTransaction={handleUpdateTransaction} onDeleteTransaction={handleDeleteTransaction} />}
         
-        {/* Restored Views */}
         {activeTab === 'lending' && <LendingView transactions={transactions} accounts={accounts} onAddTransaction={handleAddTransaction} onUpdateTransaction={handleUpdateTransaction} onDeleteTransaction={handleDeleteTransaction} />}
         {activeTab === 'wallet-manager' && <AccountsView accounts={accounts} onUpdateAccounts={accs => { if(typeof accs === 'function') { setAccounts(prev => { const res = accs(prev); triggerAutoPush({ accs: res }); return res; }); } else { setAccounts(accs); triggerAutoPush({ accs }); } }} onBack={() => setActiveTab('dashboard')} />}
         {activeTab === 'sync-setup' && <SyncView onBack={() => setActiveTab('dashboard')} onPullData={handleSyncPull} />}
